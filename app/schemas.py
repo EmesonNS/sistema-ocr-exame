@@ -25,6 +25,8 @@ class PacienteResponse(BaseModel):
 class ExameResponse(BaseModel):
     id: UUID
     paciente_id: UUID
+    data_coleta: Optional[date]
+    laboratorio: Optional[str]
     status_processamento: str
     url_documento: str
 

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from . import models, database, schemas
 import shutil
@@ -11,6 +12,15 @@ from datetime import datetime
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Sistema OCR Exames")
+
+# Configuração CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -46,6 +56,16 @@ def get_paciente(paciente_id: uuid.UUID, db: Session = Depends(database.get_db))
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
     return paciente
+
+
+@app.get("/pacientes/{paciente_id}/exames/", response_model=List[schemas.ExameResponse])
+def get_exames_paciente(paciente_id: uuid.UUID, db: Session = Depends(database.get_db)):
+    paciente = db.query(models.Paciente).filter(models.Paciente.id == paciente_id).first()
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    
+    exames = db.query(models.Exame).filter(models.Exame.paciente_id == paciente_id).all()
+    return exames
 
 
 @app.post("/pacientes/{paciente_id}/upload-exame/")
@@ -97,12 +117,19 @@ async def upload_exame(
         
         # 5. Salva os biomarcadores
         for item in dados_extraidos['exame']['biomarcadores']:
+            # Classifica o status do biomarcador
+            status_alerta = ai_service.classificar_status_alerta(
+                item['valor'],
+                item['referencia']
+            )
+            
             novo_resultado = models.ResultadoBiomarcador(
                 exame_id=novo_exame.id,
                 nome_marcador=item['nome'],
                 valor_extraido=item['valor'],
                 unidade_medida=item['unidade'],
-                referencia_lab=item['referencia']
+                referencia_lab=item['referencia'],
+                status_alerta=status_alerta
             )
             db.add(novo_resultado)
         

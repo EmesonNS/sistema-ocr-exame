@@ -2,8 +2,69 @@ import google.generativeai as genai
 import os
 import json
 import time
+import re
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+def classificar_status_alerta(valor: float, referencia_lab: str) -> str:
+    """
+    Classifica o status do biomarcador baseado no valor e referência.
+    
+    Args:
+        valor: Valor extraído do biomarcador
+        referencia_lab: String com a referência (ex: "70 a 99", "4.5-5.5")
+    
+    Returns:
+        "normal", "alerta" ou "critico"
+    """
+    if not referencia_lab or valor is None:
+        return "normal"
+    
+    try:
+        # Remove espaços e converte para minúsculas
+        ref = referencia_lab.strip().lower()
+        
+        # Tenta extrair limites numéricos (aceita formatos: "70-99", "70 a 99", "70-99 mg/dL")
+        # Remove unidades de medida
+        ref_clean = re.sub(r'[a-z°%/].*$', '', ref).strip()
+        
+        # Padrões: "70-99", "70 a 99", "70 até 99"
+        if '-' in ref_clean:
+            partes = ref_clean.split('-')
+        elif ' a ' in ref_clean:
+            partes = ref_clean.split(' a ')
+        elif ' até ' in ref_clean:
+            partes = ref_clean.split(' até ')
+        else:
+            return "normal"
+        
+        if len(partes) == 2:
+            try:
+                minimo = float(partes[0].strip())
+                maximo = float(partes[1].strip())
+                
+                # Lógica de classificação
+                if minimo <= valor <= maximo:
+                    return "normal"
+                elif valor < minimo:
+                    # Abaixo do mínimo - verifica se é crítico (muito abaixo)
+                    diferenca_percentual = ((minimo - valor) / minimo) * 100
+                    if diferenca_percentual > 20:
+                        return "critico"
+                    return "alerta"
+                else:  # valor > maximo
+                    # Acima do máximo - verifica se é crítico (muito acima)
+                    diferenca_percentual = ((valor - maximo) / maximo) * 100
+                    if diferenca_percentual > 20:
+                        return "critico"
+                    return "alerta"
+            except ValueError:
+                return "normal"
+    except Exception:
+        pass
+    
+    return "normal"
+
 
 def extrair_dados_exame(file_path: str):
   
