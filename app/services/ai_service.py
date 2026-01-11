@@ -28,6 +28,7 @@ def classificar_status_alerta(valor: float, referencia_lab: str) -> str:
         # Remove unidades de medida
         ref_clean = re.sub(r'[a-z°%/].*$', '', ref).strip()
         
+        partes = []
         # Padrões: "70-99", "70 a 99", "70 até 99"
         if '-' in ref_clean:
             partes = ref_clean.split('-')
@@ -68,48 +69,50 @@ def classificar_status_alerta(valor: float, referencia_lab: str) -> str:
 
 def extrair_dados_exame(file_path: str):
   
-  model = genai.GenerativeModel(
+    model = genai.GenerativeModel(
         model_name='gemini-2.5-flash',
         generation_config={"response_mime_type": "application/json"}
-  )
+    )
   
-  try:
-    exame_file = genai.upload_file(path=file_path, display_name="Exame Laboratorial")
-
-    # Verificação de processamento
-    while exame_file.state.name == "PROCESSING":
-        time.sleep(1)
-        exame_file = genai.get_file(exame_file.name)
-
-    if exame_file.state.name == "FAILED":
-        raise Exception("O processamento do arquivo no Google falhou.")
-
-    prompt = """
-    Analise este exame laboratorial e extraia os resultados em formato JSON estritamente seguindo esta estrutura:
-    {
-      "exame": {
-        "laboratorio": "string",
-        "data": "YYYY-MM-DD",
-        "biomarcadores": [
-          {"nome": "Glicose", "valor": 90.5, "unidade": "mg/dL", "referencia": "70 a 99"},
-          ...
-        ]
-      }
-    }
-    Ignore textos informativos e foque apenas nos nomes dos marcadores, valores numéricos e unidades.
-    """
-    # Gera a resposta
-    response = model.generate_content([prompt, exame_file])
-  
-    json_data = json.loads(response.text)
-  
-    genai.delete_file(exame_file.name)
-  
-    return json_data
-  
-  except Exception as e:
     try:
-       genai.delete_file(exame_file.name)
-    except:
-       pass
-    raise Exception(f"Erro no processamento da IA: {str(e)}")
+        exame_file = genai.upload_file(path=file_path, display_name="Exame Laboratorial")
+
+        # Verificação de processamento
+        while exame_file.state.name == "PROCESSING":
+            time.sleep(1)
+            exame_file = genai.get_file(exame_file.name)
+
+        if exame_file.state.name == "FAILED":
+            raise Exception("O processamento do arquivo no Google falhou.")
+
+        prompt = """
+        Analise este exame laboratorial e extraia os resultados em formato JSON estritamente seguindo esta estrutura:
+        {
+        "exame": {
+            "laboratorio": "string",
+            "data": "YYYY-MM-DD",
+            "biomarcadores": [
+            {"nome": "Glicose", "valor": 90.5, "unidade": "mg/dL", "referencia": "70 a 99"},
+            ...
+            ]
+        }
+        }
+        Ignore textos informativos e foque apenas nos nomes dos marcadores, valores numéricos e unidades.
+        """
+        # Gera a resposta
+        response = model.generate_content([prompt, exame_file])
+    
+        json_data = json.loads(response.text)
+    
+        genai.delete_file(exame_file.name)
+    
+        return json_data
+    
+    except Exception as e:
+        raise Exception(f"Erro na IA: {str(e)}")
+    finally:
+        if exame_file:
+            try:
+                genai.delete_file(exame_file.name)
+            except:
+                pass
