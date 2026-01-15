@@ -2,35 +2,73 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
-    container_name: ocr_exame_db
-    restart: always
+    image: postgres:15-alpine
+    container_name: ocr_db
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: alterar_a_senha_depois
-      POSTGRES_DB: sistema_ocr_exame
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ocr_exames
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
-      - ocr_exame_network
+      - ocr_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ocr_exames"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: ocr_redis
+    networks:
+      - ocr_network
 
   api:
     build: .
-    container_name: ocr_exame_api
-    restart: always
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-    environment:
-      DATABASE_URL: postgresql://admin:alterar_a_senha_depois@db:5432/sistema_ocr_exame
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-    networks:
-      - ocr_exame_network
+    container_name: ocr_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - .:/code
       - ./uploads:/code/uploads
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/ocr_exames
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - ocr_network
+
+  worker:
+    build: .
+    container_name: ocr_worker
+    command: celery -A app.core.celery_app worker --loglevel=info
+    volumes:
+      - .:/code
+      - ./uploads:/code/uploads
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/ocr_exames
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ocr_network
+
+volumes:
+  postgres_data:
 
 networks:
-  ocr_exame_network:
+  ocr_network:
     driver: bridge

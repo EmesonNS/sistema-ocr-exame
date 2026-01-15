@@ -8,6 +8,7 @@ from app.models import ResultadoBiomarcador
 from app.services import ai_service
 from app.repositories.exame_repo import ExameRepository
 from app.repositories.paciente_repo import PacienteRepository
+from app.core.celery_app import celery_app
 
 UPLOAD_DIR = "uploads"
 
@@ -34,18 +35,12 @@ class ExameService:
         # 3. Criar registro 'Pendente' no banco
         exame = self.exame_repo.create_exame(db, paciente_id, file_path)
 
-        # 4. Processamento IA
-        try:
-            dados_ia = ai_service.extrair_dados_exame(file_path)
-            self._salvar_resultados_ia(db, exame.id, dados_ia)
-            
-            exame_resultado = self.exame_repo.get_exame(db, exame.id)
+        celery_app.send_task(
+            "processar_exame_task",
+            args=[str(exame.id), file_path]
+        )
 
-            return exame_resultado, dados_ia
-            
-        except Exception as e:
-            self.exame_repo.update_exame_status(db, exame.id, "erro")
-            raise HTTPException(status_code=500, detail=f"Erro ao processar exame: {str(e)}")
+        return exame
 
     def _salvar_resultados_ia(self, db: Session, exame_id: uuid.UUID, dados: dict):
         if "exame" not in dados:

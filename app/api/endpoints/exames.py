@@ -17,12 +17,13 @@ async def upload_exame(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    exame, dados_ia = service.processar_upload(db, paciente_id, file)
+    exame = service.processar_upload(db, paciente_id, file)
 
     return {
-        "status": "sucesso",
+        "status": "processando",
+        "mensagem": "Arquivo recebido. O processamento ocorrerá em segundo plano.",
         "exame_id": exame.id,
-        "dados": dados_ia
+        "consultar_resultado": f"/api/v1/exames/{exame.id}"
     }
 
 @router.get("/exames/{exame_id}", response_model=DetalheExameResponse)
