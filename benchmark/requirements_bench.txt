@@ -1,0 +1,16 @@
+# Bibliotecas para os modelos gratuitos
+paddlepaddle
+paddleocr
+pytesseract
+opencv-python-headless
+google-generativeai>=0.5.0
+
+# Bibliotecas para métricas e dados
+pandas
+scikit-learn
+Levenshtein
+matplotlib
+seaborn
+pdf2image
+python-dotenv
+tabulate

@@ -1,0 +1,458 @@
+[
+  {
+    "arquivo": "9559932_67495.33922.29692.73369962.pdf",
+    "modelo": "Gemini 2.5",
+    "json_output": {
+      "exame": {
+        "laboratorio": "Sabin",
+        "data": "2025-09-09",
+        "biomarcadores": [
+          {
+            "nome": "HEMÁCIAS",
+            "valor": 4.58,
+            "unidade": "milhões/mm3",
+            "referencia": "4,00 a 5,40"
+          },
+          {
+            "nome": "HEMOGLOBINA",
+            "valor": 13.0,
+            "unidade": "g/dL",
+            "referencia": "12,0 a 15,8"
+          },
+          {
+            "nome": "HEMATÓCRITO",
+            "valor": 40.3,
+            "unidade": "%",
+            "referencia": "33,0 a 47,8"
+          },
+          {
+            "nome": "VCM",
+            "valor": 87.9,
+            "unidade": "fl",
+            "referencia": "80,0 a 98,0"
+          },
+          {
+            "nome": "HCM",
+            "valor": 28.4,
+            "unidade": "Pg",
+            "referencia": "26,2 a 32,6"
+          },
+          {
+            "nome": "CHCM",
+            "valor": 32.3,
+            "unidade": "g/dl",
+            "referencia": "30,0 a 36,5"
+          },
+          {
+            "nome": "RDW",
+            "valor": 13.0,
+            "unidade": "%",
+            "referencia": "11,0 a 16,0"
+          },
+          {
+            "nome": "LEUCÓCITOS",
+            "valor": 4720.0,
+            "unidade": "/mm3",
+            "referencia": "3.600 a 11.000"
+          },
+          {
+            "nome": "BASTONETES",
+            "valor": 0.0,
+            "unidade": "/mm3",
+            "referencia": "0 a 550"
+          },
+          {
+            "nome": "SEGMENTADOS",
+            "valor": 2785.0,
+            "unidade": "/mm3",
+            "referencia": "1.480 a 7.700"
+          },
+          {
+            "nome": "EOSINÓFILOS",
+            "valor": 142.0,
+            "unidade": "/mm3",
+            "referencia": "0 a 550"
+          },
+          {
+            "nome": "BASÓFILOS",
+            "valor": 47.0,
+            "unidade": "/mm3",
+            "referencia": "0 a 220"
+          },
+          {
+            "nome": "LINFÓCITOS",
+            "valor": 1416.0,
+            "unidade": "/mm3",
+            "referencia": "740 a 5.500"
+          },
+          {
+            "nome": "MONÓCITOS",
+            "valor": 330.0,
+            "unidade": "/mm3",
+            "referencia": "37 a 1.500"
+          },
+          {
+            "nome": "PLAQUETAS",
+            "valor": 179.0,
+            "unidade": "x 10^3/mm3",
+            "referencia": "130 a 450 x 10^3/mm3"
+          },
+          {
+            "nome": "VMP",
+            "valor": 11.3,
+            "unidade": "fl",
+            "referencia": "6,8 a 12,6"
+          },
+          {
+            "nome": "FERRO SÉRICO",
+            "valor": 121.0,
+            "unidade": "µg/dL",
+            "referencia": "60 a 180 µg/dL"
+          },
+          {
+            "nome": "FERRITINA",
+            "valor": 122.0,
+            "unidade": "ng/mL",
+            "referencia": "23 a 442 ng/mL"
+          },
+          {
+            "nome": "CAPACIDADE LATENTE DE LIGACAO DE FERRO",
+            "valor": 155.0,
+            "unidade": "µg/dL",
+            "referencia": "140 a 280 µg/dL"
+          },
+          {
+            "nome": "CAPACIDADE TOTAL DE LIGACAO DE FERRO",
+            "valor": 276.0,
+            "unidade": "µg/dL",
+            "referencia": "250 a 450 µg/dL"
+          },
+          {
+            "nome": "INDICE DE SATURACAO DE TRANSFERRINA",
+            "valor": 43.8,
+            "unidade": "%",
+            "referencia": "20 a 50%"
+          },
+          {
+            "nome": "GLICOSE",
+            "valor": 91.0,
+            "unidade": "mg/dL",
+            "referencia": "DE 60 A 99 mg/dL"
+          },
+          {
+            "nome": "INSULINA BASAL",
+            "valor": 7.0,
+            "unidade": "µUI/mL",
+            "referencia": "2,6 a 24,9 µUI/mL"
+          },
+          {
+            "nome": "HOMA IR",
+            "valor": 1.5,
+            "unidade": "",
+            "referencia": "Até 2,7"
+          },
+          {
+            "nome": "HEMOGLOBINA GLICADA HbA1c",
+            "valor": 5.4,
+            "unidade": "%",
+            "referencia": "< 5,7"
+          },
+          {
+            "nome": "TRIGLICERIDES",
+            "valor": 43.0,
+            "unidade": "mg/dL",
+            "referencia": "< 150"
+          },
+          {
+            "nome": "COLESTEROL TOTAL",
+            "valor": 151.0,
+            "unidade": "mg/dL",
+            "referencia": "< 190"
+          },
+          {
+            "nome": "COLESTEROL HDL",
+            "valor": 63.0,
+            "unidade": "mg/dL",
+            "referencia": "> 40"
+          },
+          {
+            "nome": "COLESTEROL LDL",
+            "valor": 76.0,
+            "unidade": "mg/dL",
+            "referencia": "< 130"
+          },
+          {
+            "nome": "HOMOCISTEÍNA",
+            "valor": 7.9,
+            "unidade": "µmol/L",
+            "referencia": "Inferior a 15,0 µmol/L"
+          },
+          {
+            "nome": "PROTEÍNA C REATIVA ULTRASSENSÍVEL",
+            "valor": 0.64,
+            "unidade": "mg/L",
+            "referencia": "< 1 mg/L"
+          },
+          {
+            "nome": "UREIA",
+            "valor": 44.9,
+            "unidade": "mg/dL",
+            "referencia": "De 15,0 a 53,0 mg/dL"
+          },
+          {
+            "nome": "CREATININA",
+            "valor": 0.91,
+            "unidade": "mg/dL",
+            "referencia": "DE 0,60 A 1,10 mg/dL"
+          },
+          {
+            "nome": "ESTIMATIVA DA TAXA DE FILTRAÇÃO GLOMERULAR",
+            "valor": 83.0,
+            "unidade": "mL/min/1.73m2",
+            "referencia": "SUPERIOR A 90 mL/min/1,73 m2"
+          },
+          {
+            "nome": "ÁCIDO ÚRICO",
+            "valor": 3.5,
+            "unidade": "mg/dL",
+            "referencia": "2,4 a 5,7 mg/dL"
+          },
+          {
+            "nome": "MAGNÉSIO",
+            "valor": 1.8,
+            "unidade": "mg/dL",
+            "referencia": "DE 1,7 A 2,7 mg/dL"
+          },
+          {
+            "nome": "CÁLCIO",
+            "valor": 9.1,
+            "unidade": "mg/dL",
+            "referencia": "De 8,6 a 10,3 mg/dL"
+          },
+          {
+            "nome": "CÁLCIO IÔNICO",
+            "valor": 1.09,
+            "unidade": "mmol/L",
+            "referencia": "De 1,12 a 1,36 mmol/L"
+          },
+          {
+            "nome": "TRANSAMINASE OXALACÉTICA TGO (AST)",
+            "valor": 17.0,
+            "unidade": "U/L",
+            "referencia": "Inferior ou igual a 33 U/L"
+          },
+          {
+            "nome": "TRANSAMINASE PIRÚVICA TGP (ALT)",
+            "valor": 12.0,
+            "unidade": "U/L",
+            "referencia": "Inferior ou igual a 41 U/L"
+          },
+          {
+            "nome": "GAMA GLUTAMIL TRANSFERASE",
+            "valor": 20.0,
+            "unidade": "U/L",
+            "referencia": "INFERIOR A 38 U/L"
+          },
+          {
+            "nome": "TSH - TIREOESTIMULANTE",
+            "valor": 2.22,
+            "unidade": "µUI/mL",
+            "referencia": "0,27 a 4,20 µUI/mL"
+          },
+          {
+            "nome": "T4 LIVRE",
+            "valor": 1.19,
+            "unidade": "ng/dL",
+            "referencia": "0,92 a 1,68 ng/dL"
+          },
+          {
+            "nome": "T3 LIVRE",
+            "valor": 3.0,
+            "unidade": "pg/mL",
+            "referencia": "2,00 a 4,40 pg/mL"
+          },
+          {
+            "nome": "ANTICORPOS ANTIPEROXIDASE (ANTI-TPO)",
+            "valor": 11.0,
+            "unidade": "UI/mL",
+            "referencia": "Inferior a 34 UI/mL"
+          },
+          {
+            "nome": "ANTICORPOS ANTITIREOGLOBULINA (ANTI-TG)",
+            "valor": 21.0,
+            "unidade": "UI/mL",
+            "referencia": "Inferior a 115 UI/mL"
+          },
+          {
+            "nome": "LH - HORMÔNIO LUTEINIZANTE",
+            "valor": 6.5,
+            "unidade": "mIU/mL",
+            "referencia": "2,4 a 12,6 mIU/mL"
+          },
+          {
+            "nome": "FSH - HORMÔNIO FOLÍCULO ESTIMULANTE",
+            "valor": 5.2,
+            "unidade": "mIU/mL",
+            "referencia": "3,5 a 12,5 mIU/mL"
+          },
+          {
+            "nome": "ESTRADIOL",
+            "valor": 95.4,
+            "unidade": "pg/mL",
+            "referencia": "30,9 a 90,4 pg/mL"
+          },
+          {
+            "nome": "PROGESTERONA",
+            "valor": 7.68,
+            "unidade": "ng/mL",
+            "referencia": "4,11 a 14,50 ng/mL"
+          },
+          {
+            "nome": "TESTOSTERONA TOTAL",
+            "valor": 16.8,
+            "unidade": "ng/dL",
+            "referencia": "8,4 a 48,1 ng/dL"
+          },
+          {
+            "nome": "TESTOSTERONA LIVRE",
+            "valor": 2.05,
+            "unidade": "pg/mL",
+            "referencia": "0,86 a 9,52 pg/mL"
+          },
+          {
+            "nome": "GLOBULINA LIGADORA DE HORMÔNIOS SEXUAIS",
+            "valor": 59.6,
+            "unidade": "nmol/L",
+            "referencia": "32,4 a 128,0 nmol/L"
+          },
+          {
+            "nome": "PROLACTINA",
+            "valor": 22.2,
+            "unidade": "ng/mL",
+            "referencia": "2,8 a 29,2 ng/mL"
+          },
+          {
+            "nome": "VITAMINA B12",
+            "valor": 412.0,
+            "unidade": "pg/mL",
+            "referencia": "197 a 771 pg/mL"
+          },
+          {
+            "nome": "VITAMINA D3 25-HIDROXI",
+            "valor": 37.0,
+            "unidade": "ng/mL",
+            "referencia": "> 20 ng/mL"
+          },
+          {
+            "nome": "ZINCO SÉRICO",
+            "valor": 93.0,
+            "unidade": "ug/dL",
+            "referencia": "46 a 150 ug/dL"
+          },
+          {
+            "nome": "PARATORMÔNIO",
+            "valor": 27.9,
+            "unidade": "pg/mL",
+            "referencia": "17,30 a 74,10 pg/mL"
+          },
+          {
+            "nome": "SULFATO DE DEHIDROEPIANDROSTERONA (SDHEA)",
+            "valor": 58.4,
+            "unidade": "µg/dL",
+            "referencia": "25,9 a 460,2 µg/dL"
+          }
+        ]
+      }
+    },
+    "raw_text": "{\n  \"exame\": {\n    \"laboratorio\": \"Sabin\",\n    \"data\": \"2025-09-09\",\n    \"biomarcadores\": [\n      {\n        \"nome\": \"HEMÁCIAS\",\n        \"valor\": 4.58,\n        \"unidade\": \"milhões/mm3\",\n        \"referencia\": \"4,00 a 5,40\"\n      },\n      {\n        \"nome\": \"HEMOGLOBINA\",\n        \"valor\": 13.0,\n        \"unidade\": \"g/dL\",\n        \"referencia\": \"12,0 a 15,8\"\n      },\n      {\n        \"nome\": \"HEMATÓCRITO\",\n        \"valor\": 40.3,\n        \"unidade\": \"%\",\n        \"referencia\": \"33,0 a 47,8\"\n      },\n      {\n        \"nome\": \"VCM\",\n        \"valor\": 87.9,\n        \"unidade\": \"fl\",\n        \"referencia\": \"80,0 a 98,0\"\n      },\n      {\n        \"nome\": \"HCM\",\n        \"valor\": 28.4,\n        \"unidade\": \"Pg\",\n        \"referencia\": \"26,2 a 32,6\"\n      },\n      {\n        \"nome\": \"CHCM\",\n        \"valor\": 32.3,\n        \"unidade\": \"g/dl\",\n        \"referencia\": \"30,0 a 36,5\"\n      },\n      {\n        \"nome\": \"RDW\",\n        \"valor\": 13.0,\n        \"unidade\": \"%\",\n        \"referencia\": \"11,0 a 16,0\"\n      },\n      {\n        \"nome\": \"LEUCÓCITOS\",\n        \"valor\": 4720.0,\n        \"unidade\": \"/mm3\",\n        \"referencia\": \"3.600 a 11.000\"\n      },\n      {\n        \"nome\": \"BASTONETES\",\n        \"valor\": 0.0,\n        \"unidade\": \"/mm3\",\n        \"referencia\": \"0 a 550\"\n      },\n      {\n        \"nome\": \"SEGMENTADOS\",\n        \"valor\": 2785.0,\n        \"unidade\": \"/mm3\",\n        \"referencia\": \"1.480 a 7.700\"\n      },\n      {\n        \"nome\": \"EOSINÓFILOS\",\n        \"valor\": 142.0,\n        \"unidade\": \"/mm3\",\n        \"referencia\": \"0 a 550\"\n      },\n      {\n        \"nome\": \"BASÓFILOS\",\n        \"valor\": 47.0,\n        \"unidade\": \"/mm3\",\n        \"referencia\": \"0 a 220\"\n      },\n      {\n        \"nome\": \"LINFÓCITOS\",\n        \"valor\": 1416.0,\n        \"unidade\": \"/mm3\",\n        \"referencia\": \"740 a 5.500\"\n      },\n      {\n        \"nome\": \"MONÓCITOS\",\n        \"valor\": 330.0,\n        \"unidade\": \"/mm3\",\n        \"referencia\": \"37 a 1.500\"\n      },\n      {\n        \"nome\": \"PLAQUETAS\",\n        \"valor\": 179.0,\n        \"unidade\": \"x 10^3/mm3\",\n        \"referencia\": \"130 a 450 x 10^3/mm3\"\n      },\n      {\n        \"nome\": \"VMP\",\n        \"valor\": 11.3,\n        \"unidade\": \"fl\",\n        \"referencia\": \"6,8 a 12,6\"\n      },\n      {\n        \"nome\": \"FERRO SÉRICO\",\n        \"valor\": 121.0,\n        \"unidade\": \"µg/dL\",\n        \"referencia\": \"60 a 180 µg/dL\"\n      },\n      {\n        \"nome\": \"FERRITINA\",\n        \"valor\": 122.0,\n        \"unidade\": \"ng/mL\",\n        \"referencia\": \"23 a 442 ng/mL\"\n      },\n      {\n        \"nome\": \"CAPACIDADE LATENTE DE LIGACAO DE FERRO\",\n        \"valor\": 155.0,\n        \"unidade\": \"µg/dL\",\n        \"referencia\": \"140 a 280 µg/dL\"\n      },\n      {\n        \"nome\": \"CAPACIDADE TOTAL DE LIGACAO DE FERRO\",\n        \"valor\": 276.0,\n        \"unidade\": \"µg/dL\",\n        \"referencia\": \"250 a 450 µg/dL\"\n      },\n      {\n        \"nome\": \"INDICE DE SATURACAO DE TRANSFERRINA\",\n        \"valor\": 43.8,\n        \"unidade\": \"%\",\n        \"referencia\": \"20 a 50%\"\n      },\n      {\n        \"nome\": \"GLICOSE\",\n        \"valor\": 91.0,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"DE 60 A 99 mg/dL\"\n      },\n      {\n        \"nome\": \"INSULINA BASAL\",\n        \"valor\": 7.0,\n        \"unidade\": \"µUI/mL\",\n        \"referencia\": \"2,6 a 24,9 µUI/mL\"\n      },\n      {\n        \"nome\": \"HOMA IR\",\n        \"valor\": 1.5,\n        \"unidade\": \"\",\n        \"referencia\": \"Até 2,7\"\n      },\n      {\n        \"nome\": \"HEMOGLOBINA GLICADA HbA1c\",\n        \"valor\": 5.4,\n        \"unidade\": \"%\",\n        \"referencia\": \"< 5,7\"\n      },\n      {\n        \"nome\": \"TRIGLICERIDES\",\n        \"valor\": 43.0,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"< 150\"\n      },\n      {\n        \"nome\": \"COLESTEROL TOTAL\",\n        \"valor\": 151.0,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"< 190\"\n      },\n      {\n        \"nome\": \"COLESTEROL HDL\",\n        \"valor\": 63.0,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"> 40\"\n      },\n      {\n        \"nome\": \"COLESTEROL LDL\",\n        \"valor\": 76.0,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"< 130\"\n      },\n      {\n        \"nome\": \"HOMOCISTEÍNA\",\n        \"valor\": 7.9,\n        \"unidade\": \"µmol/L\",\n        \"referencia\": \"Inferior a 15,0 µmol/L\"\n      },\n      {\n        \"nome\": \"PROTEÍNA C REATIVA ULTRASSENSÍVEL\",\n        \"valor\": 0.64,\n        \"unidade\": \"mg/L\",\n        \"referencia\": \"< 1 mg/L\"\n      },\n      {\n        \"nome\": \"UREIA\",\n        \"valor\": 44.9,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"De 15,0 a 53,0 mg/dL\"\n      },\n      {\n        \"nome\": \"CREATININA\",\n        \"valor\": 0.91,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"DE 0,60 A 1,10 mg/dL\"\n      },\n      {\n        \"nome\": \"ESTIMATIVA DA TAXA DE FILTRAÇÃO GLOMERULAR\",\n        \"valor\": 83.0,\n        \"unidade\": \"mL/min/1.73m2\",\n        \"referencia\": \"SUPERIOR A 90 mL/min/1,73 m2\"\n      },\n      {\n        \"nome\": \"ÁCIDO ÚRICO\",\n        \"valor\": 3.5,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"2,4 a 5,7 mg/dL\"\n      },\n      {\n        \"nome\": \"MAGNÉSIO\",\n        \"valor\": 1.8,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"DE 1,7 A 2,7 mg/dL\"\n      },\n      {\n        \"nome\": \"CÁLCIO\",\n        \"valor\": 9.1,\n        \"unidade\": \"mg/dL\",\n        \"referencia\": \"De 8,6 a 10,3 mg/dL\"\n      },\n      {\n        \"nome\": \"CÁLCIO IÔNICO\",\n        \"valor\": 1.09,\n        \"unidade\": \"mmol/L\",\n        \"referencia\": \"De 1,12 a 1,36 mmol/L\"\n      },\n      {\n        \"nome\": \"TRANSAMINASE OXALACÉTICA TGO (AST)\",\n        \"valor\": 17.0,\n        \"unidade\": \"U/L\",\n        \"referencia\": \"Inferior ou igual a 33 U/L\"\n      },\n      {\n        \"nome\": \"TRANSAMINASE PIRÚVICA TGP (ALT)\",\n        \"valor\": 12.0,\n        \"unidade\": \"U/L\",\n        \"referencia\": \"Inferior ou igual a 41 U/L\"\n      },\n      {\n        \"nome\": \"GAMA GLUTAMIL TRANSFERASE\",\n        \"valor\": 20.0,\n        \"unidade\": \"U/L\",\n        \"referencia\": \"INFERIOR A 38 U/L\"\n      },\n      {\n        \"nome\": \"TSH - TIREOESTIMULANTE\",\n        \"valor\": 2.22,\n        \"unidade\": \"µUI/mL\",\n        \"referencia\": \"0,27 a 4,20 µUI/mL\"\n      },\n      {\n        \"nome\": \"T4 LIVRE\",\n        \"valor\": 1.19,\n        \"unidade\": \"ng/dL\",\n        \"referencia\": \"0,92 a 1,68 ng/dL\"\n      },\n      {\n        \"nome\": \"T3 LIVRE\",\n        \"valor\": 3.0,\n        \"unidade\": \"pg/mL\",\n        \"referencia\": \"2,00 a 4,40 pg/mL\"\n      },\n      {\n        \"nome\": \"ANTICORPOS ANTIPEROXIDASE (ANTI-TPO)\",\n        \"valor\": 11.0,\n        \"unidade\": \"UI/mL\",\n        \"referencia\": \"Inferior a 34 UI/mL\"\n      },\n      {\n        \"nome\": \"ANTICORPOS ANTITIREOGLOBULINA (ANTI-TG)\",\n        \"valor\": 21.0,\n        \"unidade\": \"UI/mL\",\n        \"referencia\": \"Inferior a 115 UI/mL\"\n      },\n      {\n        \"nome\": \"LH - HORMÔNIO LUTEINIZANTE\",\n        \"valor\": 6.5,\n        \"unidade\": \"mIU/mL\",\n        \"referencia\": \"2,4 a 12,6 mIU/mL\"\n      },\n      {\n        \"nome\": \"FSH - HORMÔNIO FOLÍCULO ESTIMULANTE\",\n        \"valor\": 5.2,\n        \"unidade\": \"mIU/mL\",\n        \"referencia\": \"3,5 a 12,5 mIU/mL\"\n      },\n      {\n        \"nome\": \"ESTRADIOL\",\n        \"valor\": 95.4,\n        \"unidade\": \"pg/mL\",\n        \"referencia\": \"30,9 a 90,4 pg/mL\"\n      },\n      {\n        \"nome\": \"PROGESTERONA\",\n        \"valor\": 7.68,\n        \"unidade\": \"ng/mL\",\n        \"referencia\": \"4,11 a 14,50 ng/mL\"\n      },\n      {\n        \"nome\": \"TESTOSTERONA TOTAL\",\n        \"valor\": 16.8,\n        \"unidade\": \"ng/dL\",\n        \"referencia\": \"8,4 a 48,1 ng/dL\"\n      },\n      {\n        \"nome\": \"TESTOSTERONA LIVRE\",\n        \"valor\": 2.05,\n        \"unidade\": \"pg/mL\",\n        \"referencia\": \"0,86 a 9,52 pg/mL\"\n      },\n      {\n        \"nome\": \"GLOBULINA LIGADORA DE HORMÔNIOS SEXUAIS\",\n        \"valor\": 59.6,\n        \"unidade\": \"nmol/L\",\n        \"referencia\": \"32,4 a 128,0 nmol/L\"\n      },\n      {\n        \"nome\": \"PROLACTINA\",\n        \"valor\": 22.2,\n        \"unidade\": \"ng/mL\",\n        \"referencia\": \"2,8 a 29,2 ng/mL\"\n      },\n      {\n        \"nome\": \"VITAMINA B12\",\n        \"valor\": 412.0,\n        \"unidade\": \"pg/mL\",\n        \"referencia\": \"197 a 771 pg/mL\"\n      },\n      {\n        \"nome\": \"VITAMINA D3 25-HIDROXI\",\n        \"valor\": 37.0,\n        \"unidade\": \"ng/mL\",\n        \"referencia\": \"> 20 ng/mL\"\n      },\n      {\n        \"nome\": \"ZINCO SÉRICO\",\n        \"valor\": 93.0,\n        \"unidade\": \"ug/dL\",\n        \"referencia\": \"46 a 150 ug/dL\"\n      },\n      {\n        \"nome\": \"PARATORMÔNIO\",\n        \"valor\": 27.90,\n        \"unidade\": \"pg/mL\",\n        \"referencia\": \"17,30 a 74,10 pg/mL\"\n      },\n      {\n        \"nome\": \"SULFATO DE DEHIDROEPIANDROSTERONA (SDHEA)\",\n        \"valor\": 58.4,\n        \"unidade\": \"µg/dL\",\n        \"referencia\": \"25,9 a 460,2 µg/dL\"\n      }\n    ]\n  }\n}",
+    "latencia": 316.50373458862305
+  },
+  {
+    "arquivo": "9559932_67495.33922.29692.73369962.pdf",
+    "modelo": "PaddleOCR",
+    "json_output": {
+      "error": "In user code:\n\n\n    ResourceExhaustedError: Fail to alloc memory of 19375718400 size, error code is 12.\n      [Hint: Expected error == 0, but received error:12 != 0:0.] (at /paddle/paddle/phi/core/memory/allocation/cpu_allocator.cc:44)\n      [operator < pd_kernel.phi_kernel > error]"
+    },
+    "raw_text": "In user code:\n\n\n    ResourceExhaustedError: Fail to alloc memory of 19375718400 size, error code is 12.\n      [Hint: Expected error == 0, but received error:12 != 0:0.] (at /paddle/paddle/phi/core/memory/allocation/cpu_allocator.cc:44)\n      [operator < pd_kernel.phi_kernel > error]",
+    "latencia": 68.47782683372498
+  },
+  {
+    "arquivo": "9559932_67495.33922.29692.73369962.pdf",
+    "modelo": "Tesseract",
+    "json_output": {
+      "exame": {
+        "laboratorio": "bi OB Batém-pa",
+        "data": "1988-02-09",
+        "biomarcadores": [
+          {
+            "nome": "Sa n (91)",
+            "valor": 3249.909,
+            "unidade": "BODOOO"
+          },
+          {
+            "nome": "HEMÁCIAS",
+            "valor": 4.58,
+            "unidade": "milh"
+          },
+          {
+            "nome": "HEMOGLOBINA",
+            "valor": 13.0,
+            "unidade": "g/dL"
+          },
+          {
+            "nome": "HEMATÓCRITO",
+            "valor": 40.3,
+            "unidade": "%"
+          },
+          {
+            "nome": "VCM",
+            "valor": 87.9,
+            "unidade": "fL"
+          },
+          {
+            "nome": "HCM",
+            "valor": 28.4,
+            "unidade": "pg"
+          },
+          {
+            "nome": "CHCM",
+            "valor": 32.3,
+            "unidade": "g/dL"
+          },
+          {
+            "nome": "RDW",
+            "valor": 13.0,
+            "unidade": "%"
+          },
+          {
+            "nome": "LEUCÓCITOS 4.720 100",
+            "valor": 3.6,
+            "unidade": "a"
+          },
+          {
+            "nome": "SEGMENTADOS 59 2.785 40-70",
+            "valor": 1.48,
+            "unidade": "a"
+          },
+          {
+            "nome": "LINFÓCITOS 30 1.416 20-50 740 a",
+            "valor": 5.5,
+            "unidade": "3"
+          },
+          {
+            "nome": "MONÓCITOS 7 330 3-14 37 a",
+            "valor": 1.5,
+            "unidade": "3"
+          },
+          {
+            "nome": "VMP",
+            "valor": 11.3,
+            "unidade": "fl"
+          }
+        ]
+      }
+    },
+    "raw_text": "bi OB Batém-pa\nSa n (91) 3249.9090 BODOOO sabincombr\nDIAGNÓSTICO E SAÚDE\nNome :KARLA ROBERTA ALENCAR BENTES CAL\nRG 15206435 Código da OS 327-67457-5513\nDN 09/02/1988 CPF: 934.096.562-00\nMédico :ANA CRISTINA SIMOES BELTRAO Atendimento 09/09/2025 - 08:02\nConvênio: BELEM-UNIMED INTERCAMBIO (DEMAIS MATRICULAS) Qnt de exames: 40\nUnidade :BEL - P12 DOCA Página: 1/24\n\nResponsável Técnico: Dra Izaura Cristina dos Santos Souza - CRBM/PA 760\nEndereço da Unidade: Rua Bernal do Couto 53,\nLaboratório registrado no CRBM-4 nº637\n\nUmarizal - Belém - PA\n\nHEMOGRAMA COMPLETO\n\nMétodo : Contagem automatizada através de Citometria de Fluxo e Impedância\nMaterial: SANGUE\n\nEritrograma Valores de Referência\n\nResultados Homens Mulheres Crianças Acima de 70 anos\nHEMÁCIAS 4,58  milhões/mm3 4,50 a 6,10 4,00 a 5,40 4,07 a 5,37 3,90 a 5,36\nHEMOGLOBINA 13,0 g/dL 13,0 a 16,5 12,0 a 15,8 10,5 a 14,0 11,5 a 15,1\nHEMATÓCRITO 40,3 $ 36,0 a 54,0 33,0 a 47,8 30,0 a 44,5 33,0 a 46,0\nVCM 87,9 f1 80,0 a 98,0 80,0 a 98,0 70,0 a 86,0 80,0 a 98,0\nHCM 28,4 pg 26,8 a 32,9 26,2 a 32,6 23,2 a 31,7 27,0 a 31,0\nCHCM 32,3 g/dl 30,0 a 36,5 30,0 a 36,5 30,0 a 36,5 30,0 a 36,5\nRDW 13,0 & 11,0 a 16,0 11,0 a 16,0 11,0 a 16,0 11,0 a 16,0\nLeucograma Valores de Referência\n\nResultado Adultos Crianças (Menores de 8 anos)\n% /mm3 % /mm3 % /mm3\n\nLEUCÓCITOS 4.720 100 3.600 a 11.000 100 4.000 a 14.000\nBASTONETES 0 (o) 0-5 0 a 550 0-6 0 a 450\nSEGMENTADOS 59 2.785 40-70 1.480 a 7.700 30-64 1.200 a 9.600\nEOSINÓFILOS 3 142 0-7 0 a 550 0-5 0 a 550\nBASÓFILOS 1 47 0-2 0 a 220 0-2 0 a 300\nLINFÓCITOS 30 1.416 20-50 740 a 5.500 38-70 1.520 a 10.500\nMONÓCITOS 7 330 3-14 37 a 1.500 3-14 40 a 1.700\nSérie Plaquetária Valores de Referência\n\nResultados Adultos Crianças\nPLAQUETAS 179 x 10º/mm3 130 a 450 x 10º/mm3 140 a 500 x 10º/mm3\nVMP 11,3 fl 6,8 a 12,6 6,8 a 12,6\nColeta: 09/09/2025 - 08:08:00 Liberação: 09/09/2025 - 12:04:54\n\nEXAME LIBERADO ELETRONICAMENTE POR DRA. MONYQUE BARBOSA RIBEIRO CRBM-PA 2808\n\nASSINATURA DIGITAL\nC5B7BFFFODA0938A88ABC9DB88A897C201EA2Z26A4D61F7236262AE6FE4146B9623E26281963260A\n\nCERTIFICAÇÕES E ACREDITAÇÕES\nANÁLISES CLÍNICAS\n\nCOMPROMISSO\n\nATENÇÃO:\nPara a interp\ncom inform:\n\n",
+    "latencia": 3.492764711380005
+  }
+]

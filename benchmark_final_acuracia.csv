@@ -1,0 +1,4 @@
+Modelo,Acuracia (%),EMR (0/1),F1-Score,TCO ($),Latencia (s)
+Gemini 2.5,86.9,0.0,0.88,2.15,316.5
+PaddleOCR,0.0,0.0,0.0,15.4,68.5
+Tesseract,11.5,0.0,0.19,13.65,3.5
