@@ -33,7 +33,7 @@ services:
       - .:/code
       - ./uploads:/code/uploads
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@db:5432/ocr_exames
       CELERY_BROKER_URL: redis://:${REDIS_PASS}@redis:6379/0
@@ -48,7 +48,7 @@ services:
         condition: service_started
     networks:
       - ocr_network
-      # - storge_network # Uncomment when integrating with storge_app network
+      - storge_network
 
   worker:
     build: .
@@ -77,3 +77,6 @@ volumes:
 networks:
   ocr_network:
     driver: bridge
+  storge_network:
+    external: true
+    name: storge_app_default
