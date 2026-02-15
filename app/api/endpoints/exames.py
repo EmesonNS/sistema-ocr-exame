@@ -1,34 +1,56 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, Path
 from sqlalchemy.orm import Session
-import uuid
+from typing import List
+from uuid import UUID
 
-from app.schemas import DetalheExameResponse
 from app.core.database import get_db
 from app.services.exame_service import ExameService
-from app.repositories.exame_repo import ExameRepository
+from app.schemas.exame import ExameResponse, DetalheExameResponse, ExameListResponse
+from app.core.auth import get_current_user_id
 
 router = APIRouter()
-service = ExameService()
-repo = ExameRepository()
+exame_service = ExameService()
 
-@router.post("/pacientes/{paciente_id}/upload-exame/")
-async def upload_exame(
-    paciente_id: uuid.UUID,
+@router.post("/patients/{patient_id}/exames/upload", response_model=ExameResponse)
+def upload_exame(
+    patient_id: int = Path(..., title="Id do paciente no Storge"),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
 ):
-    exame = service.processar_upload(db, paciente_id, file)
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são permitidos")
+        
+    return exame_service.processar_upload(db, patient_id, user_id, file)
 
-    return {
-        "status": "processando",
-        "mensagem": "Arquivo recebido. O processamento ocorrerá em segundo plano.",
-        "exame_id": exame.id,
-        "consultar_resultado": f"/api/v1/exames/{exame.id}"
-    }
+@router.get("/patients/{patient_id}/exames", response_model=ExameListResponse)
+def list_exames(
+    patient_id: int = Path(..., title="Id do paciente no Storge"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    return exame_service.list_by_patient(db, patient_id, page, limit)
 
 @router.get("/exames/{exame_id}", response_model=DetalheExameResponse)
-def get_detalhe_exame(exame_id: uuid.UUID, db: Session = Depends(get_db)):
-    exame = repo.get_exame(db, exame_id)
+def get_exame_details(
+    exame_id: UUID,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    exame = exame_service.get_exame(db, exame_id)
     if not exame:
         raise HTTPException(status_code=404, detail="Exame não encontrado")
     return exame
+
+@router.get("/exames/{exame_id}/status", response_model=dict)
+def get_exame_status(
+    exame_id: UUID,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    exame = exame_service.get_exame(db, exame_id)
+    if not exame:
+        raise HTTPException(status_code=404, detail="Exame não encontrado")
+    return {"status": exame.status_processamento}

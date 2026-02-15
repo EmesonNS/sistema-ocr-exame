@@ -1,10 +1,10 @@
-import os
 from celery import Celery
+from app.core.config import settings
 
 celery_app = Celery(
     "worker",
-    broker=os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0"),
-    backend=os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0"),
+    broker=settings.celery_broker,
+    backend=settings.celery_backend,
     include=["app.tasks.worker"]
 )
 

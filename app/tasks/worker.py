@@ -1,62 +1,61 @@
+from celery import Task
 from sqlalchemy.orm import Session
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
-from app.services import ai_service
-from app.models.exame import Exame, ResultadoBiomarcador
+from app.services.ai_service import AIService
 from app.repositories.exame_repo import ExameRepository
-import uuid
-from datetime import datetime
+from typing import Dict, Any
+import logging
 
+# Configure logger
+logger = logging.getLogger(__name__)
+
+class DatabaseTask(Task):
+    _db = None
+
+    @property
+    def db(self):
+        if self._db is None:
+            self._db = SessionLocal()
+        return self._db
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        if self._db:
+            self._db.close()
+
+# Instantiate services
+ai_service = AIService()
 exame_repo = ExameRepository()
 
-@celery_app.task(name="processar_exame_task")
-def processar_exame_task(exame_id_str: str, file_path: str):
-    db: Session = SessionLocal()
-
+@celery_app.task(
+    base=DatabaseTask, 
+    bind=True, 
+    name="processar_exame_task",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={'max_retries': 3}
+)
+def processar_exame_task(self, exame_id: str, file_path: str):
+    logger.info(f"Iniciando processamento do exame {exame_id}")
     try:
-        exame_id = uuid.UUID(exame_id_str)
-        print(f"[worker] Iniciando processamento do exame: {exame_id}")
-
-        dados_ia = ai_service.extrair_dados_exame(file_path)
-
-        if "exame" in dados_ia:
-            info = dados_ia["exame"]
-
-            data_coleta = None
-            if info.get("data"):
-                try:
-                    data_coleta = datetime.strptime(info.get("data"), "%Y-%m-%d").date()
-                except:
-                    pass
+        # 1. Update status to 'processando'
+        exame_repo.update_status(self.db, exame_id, "processando")
+        
+        # 2. Extract data using AI
+        dados_extraidos = ai_service.extrair_dados_exame(file_path)
+        
+        # 3. Save results
+        if dados_extraidos and 'resultados' in dados_extraidos:
+            for resultado in dados_extraidos['resultados']:
+                exame_repo.add_resultado(self.db, exame_id, resultado)
             
-            exame_repo.update_exame_status(
-                db,
-                exame_id,
-                status="concluido",
-                laboratorio=info.get("laboratorio"),
-                data_coleta=data_coleta
-            )
+            exame_repo.update_status(self.db, exame_id, "concluido")
+            logger.info(f"Exame {exame_id} concluído com sucesso")
+        else:
+            exame_repo.update_status(self.db, exame_id, "erro")
+            logger.error(f"Nenhum dado extraído para o exame {exame_id}")
 
-            biomarcadores = info.get("biomarcadores", [])
-            for item in biomarcadores:
-                status_alerta = ai_service.classificar_status_alerta(
-                    item.get('valor'),
-                    item.get('referencia')
-                )
-
-                resultado = ResultadoBiomarcador(
-                    exame_id=exame_id,
-                    nome_marcador=item.get('nome', 'Desconhecido'),
-                    valor_extraido=item.get('valor'),
-                    unidade_medida=item.get('unidade'),
-                    referencia_lab=item.get('referencia'),
-                    status_alerta=status_alerta
-                )
-                exame_repo.add_resultado(db, resultado)
-
-            print(f"[worker] Exame {exame_id} concluído com sucesso.")
     except Exception as e:
-        print(f"[Worker] Erro ao processar exame {exame_id_str}: {e}")
-        exame_repo.update_exame_status(db, uuid.UUID(exame_id_str), "erro")
-    finally:
-        db.close()
+        logger.exception(f"Erro ao processar exame {exame_id}: {e}")
+        exame_repo.update_status(self.db, exame_id, "erro")
+        raise e

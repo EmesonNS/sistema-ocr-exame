@@ -5,7 +5,7 @@ from uuid import UUID
 
 class ExameResponse(BaseModel):
     id: UUID
-    paciente_id: UUID
+    patient_id: int
     data_coleta: Optional[date]
     laboratorio: Optional[str]
     status_processamento: str
@@ -27,6 +27,7 @@ class ResultadoBiomarcadorResponse(BaseModel):
 
 class DetalheExameResponse(BaseModel):
     id: UUID
+    patient_id: int
     data_coleta: Optional[date]
     laboratorio: Optional[str]
     status_processamento: str
@@ -34,3 +35,9 @@ class DetalheExameResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ExameListResponse(BaseModel):
+    items: List[ExameResponse]
+    total: int
+    page: int
+    pages: int

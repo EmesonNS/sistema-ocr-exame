@@ -1,2 +1,1 @@
-from .paciente import Paciente
-from .exame import Exame, ResultadoBiomarcador
+from app.models.exame import Exame, ResultadoBiomarcador

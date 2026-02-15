@@ -2,21 +2,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core import database
 from app import models
-from app.api.endpoints import pacientes, exames
+from app.api.endpoints import exames # Removed pacientes
+from app.core.config import settings
 
-database.Base.metadata.create_all(bind=database.engine)
+# Database table creation removed - using Alembic migrations instead
+# database.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="Sistema OCR Exames - Arquitetura Limpa")
+app = FastAPI(title="Sistema OCR Exames - Microservice")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(pacientes.router, prefix="/api/v1/pacientes", tags=["Pacientes"])
+# app.include_router(pacientes.router, prefix="/api/v1/pacientes", tags=["Pacientes"]) # Removed
 app.include_router(exames.router, prefix="/api/v1", tags=["Exames"])
 
 @app.get("/health")

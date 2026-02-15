@@ -1,2 +1,1 @@
-from .paciente import PacienteCreate, PacienteResponse
-from .exame import ExameResponse, ResultadoBiomarcadorResponse, DetalheExameResponse
+from app.schemas.exame import ExameResponse, ResultadoBiomarcadorResponse, DetalheExameResponse, ExameListResponse
