@@ -8,4 +8,5 @@ celery_app = Celery(
     include=["app.tasks.worker"]
 )
 
+celery_app.conf.broker_connection_retry_on_startup = True
 celery_app.autodiscover_tasks(["app.tasks"])

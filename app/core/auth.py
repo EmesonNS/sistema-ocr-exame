@@ -28,7 +28,7 @@ async def get_current_user_payload(token: Optional[str] = Depends(get_current_us
         )
     
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256", "HS384", "HS512"])
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(

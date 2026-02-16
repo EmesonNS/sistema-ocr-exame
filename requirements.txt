@@ -5,7 +5,8 @@ psycopg2-binary==2.9.9
 pydantic==2.5.2
 pydantic-settings>=2.1.0
 python-multipart==0.0.6
-google-generativeai>=0.5.0
+google-genai>=1.0.0
+openai>=1.0.0
 # fastapi-cors==0.0.6  # Removed as CORS is native in FastAPI
 celery==5.3.6
 redis==5.0.1

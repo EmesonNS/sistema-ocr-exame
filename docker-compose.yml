@@ -48,11 +48,11 @@ services:
         condition: service_started
     networks:
       - ocr_network
-      - storge_network
 
   worker:
     build: .
     container_name: ocr_worker
+    entrypoint: []
     command: celery -A app.core.celery_app worker --loglevel=info
     volumes:
       - .:/code
@@ -77,6 +77,3 @@ volumes:
 networks:
   ocr_network:
     driver: bridge
-  storge_network:
-    external: true
-    name: storge_app_default
