@@ -29,7 +29,7 @@ class ResultadoBiomarcadorResponse(BaseModel):
     """Resultado de um biomarcador individual extraído pelo OCR."""
     id: UUID = Field(description="UUID do resultado")
     nome_marcador: str = Field(description="Nome do biomarcador (ex: Colesterol Total)")
-    valor_extraido: float = Field(description="Valor numérico extraído")
+    valor_extraido: Optional[str] = Field(None, description="Valor extraído (numérico ou textual)")
     unidade_medida: Optional[str] = Field(None, description="Unidade de medida (ex: mg/dL)")
     referencia_lab: Optional[str] = Field(None, description="Faixa de referência do laboratório")
     status_alerta: Optional[str] = Field(None, description="Classificação: normal | alto | baixo")

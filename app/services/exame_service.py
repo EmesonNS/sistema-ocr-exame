@@ -23,6 +23,8 @@ class ExameService:
         novo_nome = f"{uuid.uuid4()}{file_extension}"
         file_path = os.path.join(UPLOAD_DIR, novo_nome)
         
+        # Reset file cursor (pode ter sido consumido pelo FastAPI)
+        file.file.seek(0)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 

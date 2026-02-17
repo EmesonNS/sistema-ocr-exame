@@ -7,8 +7,9 @@ pydantic-settings>=2.1.0
 python-multipart==0.0.6
 google-genai>=1.0.0
 openai>=1.0.0
+pdf2image>=1.16.0
 # fastapi-cors==0.0.6  # Removed as CORS is native in FastAPI
 celery==5.3.6
 redis==5.0.1
-pyjwt>=2.8.0
+# pyjwt>=2.8.0  # Removido - usando API Keys em vez de JWT
 alembic>=1.13.0

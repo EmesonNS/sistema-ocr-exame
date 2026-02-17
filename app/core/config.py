@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
 
-    # Auth
-    JWT_SECRET: str = ""
+    # API Key (opcional - para uso administrativo via CLI)
+    MASTER_API_KEY: str = ""
 
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "https://app.storge.care"]

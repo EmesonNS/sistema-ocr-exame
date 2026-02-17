@@ -24,7 +24,7 @@ class ResultadoBiomarcador(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     exame_id = Column(UUID(as_uuid=True), ForeignKey("exames.id"))
     nome_marcador = Column(String, nullable=False)
-    valor_extraido = Column(Float)
+    valor_extraido = Column(String)
     unidade_medida = Column(String)
     referencia_lab = Column(String)
     status_alerta = Column(String)

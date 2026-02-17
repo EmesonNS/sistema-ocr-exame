@@ -1,7 +1,9 @@
 from google import genai
 from openai import OpenAI
+from pdf2image import convert_from_path
 from app.core.config import settings
 import base64
+import io
 import json
 import logging
 
@@ -27,7 +29,8 @@ Se o valor não for numérico, tente converter ou extraia como está.
 class AIService:
     def __init__(self):
         self.google_client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        self.model = "gemini-2.0-flash"
+        self.google_model = "gemini-2.0-flash"
+        self.openrouter_model = "google/gemini-2.5-flash"
         self.openrouter_client = None
         if settings.OPENROUTER_API_KEY:
             self.openrouter_client = OpenAI(
@@ -56,7 +59,7 @@ class AIService:
             uploaded_file = self.google_client.files.upload(file=file_path)
 
             response = self.google_client.models.generate_content(
-                model=self.model,
+                model=self.google_model,
                 contents=[uploaded_file, PROMPT_EXAME],
             )
 
@@ -69,27 +72,34 @@ class AIService:
 
     def _extrair_via_openrouter(self, file_path: str) -> dict | None:
         try:
-            with open(file_path, "rb") as f:
-                pdf_b64 = base64.b64encode(f.read()).decode("utf-8")
+            # Converte PDF em imagens (uma por página)
+            images = convert_from_path(file_path, dpi=200)
+            logger.info(f"PDF convertido em {len(images)} página(s)")
+
+            # Monta content parts: todas as páginas como imagens
+            content_parts = []
+            for i, img in enumerate(images):
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+                content_parts.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_b64}",
+                    },
+                })
+
+            content_parts.append({
+                "type": "text",
+                "text": PROMPT_EXAME,
+            })
 
             response = self.openrouter_client.chat.completions.create(
-                model=f"google/{self.model}",
+                model=self.openrouter_model,
                 messages=[
                     {
                         "role": "user",
-                        "content": [
-                            {
-                                "type": "file",
-                                "file": {
-                                    "filename": "exame.pdf",
-                                    "data": f"data:application/pdf;base64,{pdf_b64}",
-                                },
-                            },
-                            {
-                                "type": "text",
-                                "text": PROMPT_EXAME,
-                            },
-                        ],
+                        "content": content_parts,
                     }
                 ],
             )
