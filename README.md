@@ -74,14 +74,17 @@ Edite o arquivo `.env` com suas configurações:
 ```bash
 # Banco de dados
 DB_USER=ocr_user
-DB_PASS=senha_segura_aqui
+DB_PASS=senha_segura_aqui  # OBRIGATÓRIO - não usar default
 
 # Redis
-REDIS_PASS=senha_segura_aqui
+REDIS_PASS=senha_segura_aqui  # OBRIGATÓRIO - não usar default
 
 # APIs de IA
 GEMINI_API_KEY=sua_chave_gemini_aqui
 OPENROUTER_API_KEY=sua_chave_openrouter_aqui  # Opcional, usado como fallback
+
+# Chave mestra para operações administrativas
+MASTER_API_KEY=sua_chave_mestra_segura_aqui  # OBRIGATÓRIO em produção
 
 # CORS (origens permitidas)
 CORS_ORIGINS=["http://localhost:5173", "https://app.storge.care"]
@@ -138,20 +141,72 @@ X-API-Key: sua-chave-aqui
 
 ### Gerenciamento de API Keys
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| POST | `/api/v1/api-keys` | Criar nova API Key |
-| GET | `/api/v1/api-keys` | Listar todas as API Keys |
-| PATCH | `/api/v1/api-keys/{id}/revoke` | Revogar uma API Key |
-| PATCH | `/api/v1/api-keys/{id}/activate` | Reativar uma API Key |
+> **IMPORTANTE**: Todos os endpoints de API Keys requerem autenticação administrativa via header `X-Master-Key`. Configure `MASTER_API_KEY` no arquivo `.env`.
 
-> **Aviso**: Os endpoints de API Keys devem ser protegidos por firewall ou rede privada, pois permitem criar novas chaves de acesso.
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| POST | `/api/v1/api-keys` | Criar nova API Key | X-Master-Key |
+| GET | `/api/v1/api-keys` | Listar todas as API Keys | X-Master-Key |
+| DELETE | `/api/v1/api-keys/{id}` | Revogar uma API Key | X-Master-Key |
+| POST | `/api/v1/api-keys/{id}/activate` | Reativar uma API Key | X-Master-Key |
+
+**Exemplo de criação de API Key:**
+
+```bash
+curl -X POST http://localhost:8001/api/v1/api-keys \
+  -H "X-Master-Key: sua-chave-mestra" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Minha Chave", "rate_limit": 60}'
+```
+
+> **Segurança**: Os endpoints de API Keys são protegidos por `X-Master-Key`. Configure uma chave segura em `MASTER_API_KEY` e mantenha-a segura. Em produção, considere também restringir via firewall.
 
 ## Fluxo de Processamento
 
 1. **Upload**: Cliente envia PDF → status `pendente`
 2. **Worker**: Celery processa com IA → status `processando`
 3. **Conclusão**: Resultados extraídos → status `concluido` ou `erro`
+
+## Tipos de Valores de Biomarcadores
+
+O sistema distingue automaticamente entre:
+
+- **Valores Absolutos**: Números com unidades como `/mm³`, `g/dL`, `mg/dL`
+- **Valores Percentuais**: Números com `%`
+- **Valores Textuais**: Como "Negativo", "Positivo", "Traços"
+
+### Exemplo de Extração Correta
+
+Para um hemograma com `SEGMENTADOS 49,0 %`:
+
+```json
+{
+  "nome_marcador": "SEGMENTADOS",
+  "valor_raw": "49,0",
+  "valor_numerico": 49.0,
+  "tipo_valor": "percentual",
+  "unidade_medida": "%",
+  "referencia_min": 40.0,
+  "referencia_max": 75.0,
+  "status_alerta": "normal"
+}
+```
+
+O sistema **NÃO** converte automaticamente percentuais para absolutos para evitar erros de interpretação.
+
+### Auditoria e Correção de Valores
+
+O sistema detecta automaticamente valores potencialmente incorretos (ex: decimal deslocado) e:
+- Aplica correções quando há alta confiança (>90%)
+- Marca como `needs_review: true` quando a correção é incerta
+- Registra auditoria completa: valor original, valor corrigido, regra aplicada, confiança
+
+Campos de auditoria em cada resultado:
+- `valor_raw`: Valor original extraído do PDF
+- `valor_numerico`: Valor numérico normalizado
+- `correcao_aplicada`: Descrição da correção (se houver)
+- `confianca`: Nível de confiança na extração (0.0 a 1.0)
+- `needs_review`: Se precisa revisão manual
 
 ### Exemplo de Uso
 
