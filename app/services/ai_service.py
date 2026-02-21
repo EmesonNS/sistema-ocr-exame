@@ -48,10 +48,10 @@ class AIService:
         if self.openrouter_client:
             logger.warning("Google Gemini falhou ou retornou vazio, tentando OpenRouter")
             dados = self._extrair_via_openrouter(file_path)
-            if dados:
+            if dados and dados.get("resultados"):
                 return dados
 
-        logger.error("Ambos os provedores falharam na extração")
+        logger.error("Ambos os provedores falharam na extração - retornando lista vazia")
         return {"resultados": []}
 
     def _extrair_via_google(self, file_path: str) -> dict | None:
@@ -109,7 +109,12 @@ class AIService:
             return self._parse_response(text)
 
         except Exception as e:
-            logger.error(f"Erro no OpenRouter (fallback): {e}")
+            error_str = str(e)
+            # Verifica se é erro de rate limit (429) ou crédito insuficiente
+            if "429" in error_str or "rate" in error_str.lower() or "insufficient" in error_str.lower():
+                logger.error(f"OpenRouter: Erro 429/Rate Limit/Crédito insuficiente: {e}")
+            else:
+                logger.error(f"Erro no OpenRouter (fallback): {e}")
             return None
 
     def _parse_response(self, text: str) -> dict | None:
