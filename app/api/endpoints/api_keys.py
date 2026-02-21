@@ -8,21 +8,28 @@ from datetime import datetime
 from app.core.database import get_db
 from app.models.api_key import ApiKey
 from app.core.auth import hash_api_key
+from app.core.admin_auth import require_master_key
 
 router = APIRouter()
 
 
 class ApiKeyCreate(BaseModel):
     """Schema para criação de nova API Key."""
+
     client_name: str = Field(..., description="Nome do cliente/aplicação")
-    rate_limit_per_minute: int = Field(60, description="Limite de requisições por minuto")
+    rate_limit_per_minute: int = Field(
+        60, description="Limite de requisições por minuto"
+    )
 
 
 class ApiKeyResponse(BaseModel):
     """Schema de resposta com a API Key (mostrada apenas uma vez)."""
+
     id: UUID
     client_name: str
-    api_key: str = Field(..., description="API Key gerada (guarde-a, não será exibida novamente)")
+    api_key: str = Field(
+        ..., description="API Key gerada (guarde-a, não será exibida novamente)"
+    )
     rate_limit_per_minute: int
     created_at: datetime
 
@@ -32,6 +39,7 @@ class ApiKeyResponse(BaseModel):
 
 class ApiKeyInfo(BaseModel):
     """Schema de informação sem expor a key."""
+
     id: UUID
     client_name: str
     is_active: bool
@@ -45,6 +53,7 @@ class ApiKeyInfo(BaseModel):
 def generate_api_key() -> str:
     """Gera uma API Key aleatória de 32 bytes em hex."""
     import secrets
+
     return secrets.token_hex(32)
 
 
@@ -52,22 +61,25 @@ def generate_api_key() -> str:
     "/api-keys",
     response_model=ApiKeyResponse,
     summary="Criar nova API Key",
-    description="Gera uma nova API Key para um cliente. A key só é exibida uma vez.",
+    description="Gera uma nova API Key para um cliente. A key só é exibida uma vez. Requer X-Master-Key header.",
     responses={
         200: {"description": "API Key criada"},
         400: {"description": "Nome de cliente já existe"},
+        401: {"description": "Chave mestra inválida"},
+        503: {"description": "Admin desabilitado"},
     },
 )
 def create_api_key(
     data: ApiKeyCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_master_key),
 ):
     # Verifica se já existe uma key para este cliente
     existing = db.query(ApiKey).filter(ApiKey.client_name == data.client_name).first()
     if existing:
         raise HTTPException(
             status_code=400,
-            detail=f"Já existe uma API Key para o cliente '{data.client_name}'"
+            detail=f"Já existe uma API Key para o cliente '{data.client_name}'",
         )
 
     # Gera a key e seu hash
@@ -78,7 +90,7 @@ def create_api_key(
         key_hash=key_hash,
         client_name=data.client_name,
         rate_limit_per_minute=data.rate_limit_per_minute,
-        is_active=True
+        is_active=True,
     )
 
     db.add(api_key)
@@ -90,7 +102,7 @@ def create_api_key(
         client_name=api_key.client_name,
         api_key=raw_key,
         rate_limit_per_minute=api_key.rate_limit_per_minute,
-        created_at=api_key.created_at
+        created_at=api_key.created_at,
     )
 
 
@@ -98,9 +110,14 @@ def create_api_key(
     "/api-keys",
     response_model=List[ApiKeyInfo],
     summary="Listar API Keys",
-    description="Lista todas as API Keys cadastradas (sem expor as chaves)."
+    description="Lista todas as API Keys cadastradas (sem expor as chaves). Requer X-Master-Key header.",
+    responses={
+        200: {"description": "Lista de API Keys"},
+        401: {"description": "Chave mestra inválida"},
+        503: {"description": "Admin desabilitado"},
+    },
 )
-def list_api_keys(db: Session = Depends(get_db)):
+def list_api_keys(db: Session = Depends(get_db), _: bool = Depends(require_master_key)):
     keys = db.query(ApiKey).all()
     return [
         ApiKeyInfo(
@@ -108,7 +125,7 @@ def list_api_keys(db: Session = Depends(get_db)):
             client_name=k.client_name,
             is_active=k.is_active,
             rate_limit_per_minute=k.rate_limit_per_minute,
-            created_at=k.created_at
+            created_at=k.created_at,
         )
         for k in keys
     ]
@@ -117,13 +134,17 @@ def list_api_keys(db: Session = Depends(get_db)):
 @router.delete(
     "/api-keys/{key_id}",
     summary="Revogar API Key",
-    description="Desativa uma API Key (soft delete).",
+    description="Desativa uma API Key (soft delete). Requer X-Master-Key header.",
     responses={
         200: {"description": "API Key revogada"},
+        401: {"description": "Chave mestra inválida"},
         404: {"description": "API Key não encontrada"},
-    }
+        503: {"description": "Admin desabilitado"},
+    },
 )
-def revoke_api_key(key_id: UUID, db: Session = Depends(get_db)):
+def revoke_api_key(
+    key_id: UUID, db: Session = Depends(get_db), _: bool = Depends(require_master_key)
+):
     api_key = db.query(ApiKey).filter(ApiKey.id == key_id).first()
     if not api_key:
         raise HTTPException(status_code=404, detail="API Key não encontrada")
@@ -137,13 +158,17 @@ def revoke_api_key(key_id: UUID, db: Session = Depends(get_db)):
 @router.post(
     "/api-keys/{key_id}/activate",
     summary="Reativar API Key",
-    description="Reativa uma API Key previamente revogada.",
+    description="Reativa uma API Key previamente revogada. Requer X-Master-Key header.",
     responses={
         200: {"description": "API Key reativada"},
+        401: {"description": "Chave mestra inválida"},
         404: {"description": "API Key não encontrada"},
-    }
+        503: {"description": "Admin desabilitado"},
+    },
 )
-def activate_api_key(key_id: UUID, db: Session = Depends(get_db)):
+def activate_api_key(
+    key_id: UUID, db: Session = Depends(get_db), _: bool = Depends(require_master_key)
+):
     api_key = db.query(ApiKey).filter(ApiKey.id == key_id).first()
     if not api_key:
         raise HTTPException(status_code=404, detail="API Key não encontrada")
