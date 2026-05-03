@@ -4,7 +4,7 @@ Repository para operações de banco de dados relacionadas a exames.
 
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from app.models.exame import Exame, ResultadoBiomarcador, ProcessingStage
+from app.models.exame import Exame, ResultadoBiomarcador, ProcessingStage, ExameBatch
 from typing import List, Tuple, Optional
 import uuid
 from datetime import datetime, date
@@ -16,17 +16,20 @@ logger = logging.getLogger(__name__)
 class ExameRepository:
     """Repository para gerenciar exames e resultados de biomarcadores."""
 
-    def _coerce_exame_id(self, exame_id) -> uuid.UUID | None:
-        if isinstance(exame_id, uuid.UUID):
-            return exame_id
+    def _coerce_uuid(self, obj_id) -> uuid.UUID | None:
+        if isinstance(obj_id, uuid.UUID):
+            return obj_id
 
-        if isinstance(exame_id, str):
+        if isinstance(obj_id, str):
             try:
-                return uuid.UUID(exame_id)
+                return uuid.UUID(obj_id)
             except ValueError:
                 return None
 
         return None
+
+    def _coerce_exame_id(self, exame_id) -> uuid.UUID | None:
+        return self._coerce_uuid(exame_id)
 
     def _parse_data_coleta(self, data_coleta: str) -> date | None:
         if not data_coleta:
@@ -41,7 +44,7 @@ class ExameRepository:
         return None
 
     def create_exame(
-        self, db: Session, patient_id: int, user_id: int, file_path: str
+        self, db: Session, patient_id: int, user_id: int, file_path: str, webhook_url: Optional[str] = None, is_digitally_signed: bool = False, batch_id: Optional[uuid.UUID] = None
     ) -> Exame:
         """Cria um novo exame."""
         db_exame = Exame(
@@ -49,11 +52,75 @@ class ExameRepository:
             uploaded_by_user_id=user_id,
             url_documento=file_path,
             status_processamento="pendente",
+            webhook_url=webhook_url,
+            is_digitally_signed=is_digitally_signed,
+            batch_id=batch_id,
         )
         db.add(db_exame)
         db.commit()
         db.refresh(db_exame)
         return db_exame
+
+    def create_batch(self, db: Session, patient_id: int, total_files: int, webhook_url: Optional[str] = None) -> ExameBatch:
+        """Cria um novo lote de exames."""
+        batch = ExameBatch(
+            patient_id=patient_id,
+            total_files=total_files,
+            webhook_url=webhook_url,
+            status="processando"
+        )
+        db.add(batch)
+        db.commit()
+        db.refresh(batch)
+        return batch
+
+    def get_batch(self, db: Session, batch_id: uuid.UUID) -> Optional[ExameBatch]:
+        """Busca lote por ID."""
+        return db.query(ExameBatch).filter(ExameBatch.id == batch_id).first()
+
+    def update_batch_progress(self, db: Session, batch_id: uuid.UUID, success: bool = True) -> Tuple[Optional[ExameBatch], bool]:
+        """
+        Atualiza o progresso do lote de forma atômica.
+        Retorna (batch, just_completed_flag).
+        """
+        from sqlalchemy import update
+        
+        # 1. Incremento Atômico
+        field = ExameBatch.completed_files if success else ExameBatch.failed_files
+        stmt = (
+            update(ExameBatch)
+            .where(ExameBatch.id == batch_id)
+            .values({field: field + 1})
+        )
+        db.execute(stmt)
+        db.commit()
+
+        # 2. Verificar se este worker finalizou o lote
+        # Usamos uma transação para mudar o status de 'processando' para 'concluido'
+        # apenas UMA VEZ. O worker que conseguir fazer o update do status para 'concluido'
+        # será o responsável por disparar o webhook.
+        batch = self.get_batch(db, batch_id)
+        if not batch:
+            return None, False
+        
+        just_completed = False
+        if (batch.completed_files + batch.failed_files >= batch.total_files) and batch.status == "processando":
+            # Tentar marcar como concluído de forma atômica
+            stmt_status = (
+                update(ExameBatch)
+                .where(ExameBatch.id == batch_id)
+                .where(ExameBatch.status == "processando") # Garantia de concorrência
+                .values(status="concluido")
+            )
+            result = db.execute(stmt_status)
+            db.commit()
+            
+            # Se rowcount > 0, este worker foi o vencedor
+            if result.rowcount > 0:
+                just_completed = True
+                db.refresh(batch)
+            
+        return batch, just_completed
 
     def get_exame(self, db: Session, exame_id: uuid.UUID) -> Optional[Exame]:
         """Busca exame por ID."""

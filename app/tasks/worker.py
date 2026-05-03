@@ -13,6 +13,7 @@ from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.services.ai_service import AIService
 from app.services.clinical_summary_service import ClinicalSummaryService
+from app.services.webhook_service import WebhookService
 from app.repositories.exame_repo import ExameRepository
 from app.models.exame import ProcessingStage
 from typing import Dict, Any
@@ -43,25 +44,19 @@ class DatabaseTask(Task):
 # Instantiate services
 ai_service = AIService()
 clinical_summary_service = ClinicalSummaryService()
+webhook_service = WebhookService()
 exame_repo = ExameRepository()
 
 
 @celery_app.task(
     base=DatabaseTask,
-    bind=True,
     name="processar_exame_task",
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_kwargs={"max_retries": 3},
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
 )
 def processar_exame_task(self, exame_id: str, file_path: str):
-    """
-    Processa exame assincronamente.
-
-    Args:
-        exame_id: UUID do exame
-        file_path: Caminho do arquivo temporário
-    """
+    """Orquestra o processamento do exame."""
     logger.info(f"Iniciando processamento do exame {exame_id}")
 
     try:
@@ -74,8 +69,7 @@ def processar_exame_task(self, exame_id: str, file_path: str):
             "Processamento na fila",
         )
 
-        # 2. Downloading (10%) - arquivo already downloaded,
-        # This is where the file was saved before triggering the task
+        # 2. Downloading (10%)
         exame_repo.update_processing_progress(
             self.db,
             exame_id,
@@ -93,7 +87,7 @@ def processar_exame_task(self, exame_id: str, file_path: str):
             "Extraindo texto via OCR",
         )
 
-        # 4. AI Analyzing (50%) - extract data using AI
+        # 4. AI Analyzing (50%)
         exame_repo.update_processing_progress(
             self.db,
             exame_id,
@@ -103,8 +97,8 @@ def processar_exame_task(self, exame_id: str, file_path: str):
         )
 
         # Extract data using AI com normalização
-        resultados, data_coleta, laboratorio = ai_service.extrair_biomarcadores(
-            file_path
+        resultados, data_coleta, laboratorio = asyncio.run(
+            ai_service.extrair_biomarcadores(file_path)
         )
 
         # 5. Normalizing (80%)
@@ -120,31 +114,26 @@ def processar_exame_task(self, exame_id: str, file_path: str):
         if data_coleta or laboratorio:
             exame_repo.update_exame_metadata(
                 self.db,
-                exame_id=exame_id,
+                exame_id,
                 data_coleta=data_coleta,
                 laboratorio=laboratorio,
             )
 
-        # 7. Salvar resultados normalizados
+        # 7. Salvar resultados
         if resultados:
-            for resultado in resultados:
-                exame_repo.add_resultado_normalizado(self.db, exame_id, resultado)
+            for res in resultados:
+                exame_repo.add_resultado_normalizado(self.db, exame_id, res)
 
+            # 8. Gerar resumo clínico (passo opcional/final)
             try:
-                exame_repo.update_processing_progress(
-                    self.db,
-                    exame_id,
-                    ProcessingStage.NORMALIZING,
-                    90,
-                    "Gerando resumo clínico",
-                )
-
+                # Coerce ID for safe comparison/lookup
                 coerced_id = None
                 try:
-                    coerced_id = uuid.UUID(exame_id)
+                    coerced_id = uuid.UUID(exame_id) if isinstance(exame_id, str) else exame_id
                 except ValueError:
                     coerced_id = None
 
+                # Aqui o service já é async, então usamos asyncio.run
                 asyncio.run(
                     clinical_summary_service.generate_clinical_summary(
                         self.db,
@@ -167,6 +156,38 @@ def processar_exame_task(self, exame_id: str, file_path: str):
             logger.info(
                 f"Exame {exame_id} concluído com sucesso - {len(resultados)} biomarcadores"
             )
+
+            # Enviar Webhook de Sucesso
+            try:
+                coerced_id = uuid.UUID(exame_id) if isinstance(exame_id, str) else exame_id
+                exame = exame_repo.get_exame(self.db, coerced_id)
+                if exame and exame.webhook_url:
+                    webhook_service.send_notification_sync(
+                        exame.webhook_url,
+                        {
+                            "exame_id": str(exame_id),
+                            "status": "concluido",
+                            "biomarcadores_count": len(resultados),
+                            "patient_id": exame.patient_id,
+                        }
+                    )
+                
+                # Tratar Lote (Batch)
+                if exame and exame.batch_id:
+                    batch, just_completed = exame_repo.update_batch_progress(self.db, exame.batch_id, success=True)
+                    if batch and just_completed and batch.webhook_url:
+                        webhook_service.send_notification_sync(
+                            batch.webhook_url,
+                            {
+                                "batch_id": str(batch.id),
+                                "status": "concluido",
+                                "total_files": batch.total_files,
+                                "patient_id": batch.patient_id,
+                            }
+                        )
+
+            except Exception as e:
+                logger.error(f"Erro ao enviar webhook de sucesso ou atualizar lote: {e}")
         else:
             exame_repo.update_processing_progress(
                 self.db,
@@ -176,6 +197,26 @@ def processar_exame_task(self, exame_id: str, file_path: str):
                 "Nenhum dado extraído do documento",
             )
             logger.error(f"Nenhum dado extraído para o exame {exame_id}")
+            
+            # Notificar erro no lote se houver
+            try:
+                coerced_id = uuid.UUID(exame_id) if isinstance(exame_id, str) else exame_id
+                exame = exame_repo.get_exame(self.db, coerced_id)
+                if exame and exame.batch_id:
+                    batch, just_completed = exame_repo.update_batch_progress(self.db, exame.batch_id, success=False)
+                    if batch and just_completed and batch.webhook_url:
+                        webhook_service.send_notification_sync(
+                            batch.webhook_url,
+                            {
+                                "batch_id": str(batch.id),
+                                "status": "concluido_com_erros",
+                                "total_files": batch.total_files,
+                                "failed_files": batch.failed_files,
+                                "patient_id": batch.patient_id,
+                            }
+                        )
+            except:
+                pass
 
     except Exception as e:
         logger.exception(f"Erro ao processar exame {exame_id}: {e}")
@@ -186,6 +227,39 @@ def processar_exame_task(self, exame_id: str, file_path: str):
             0,
             f"Erro no processamento: {str(e)}",
         )
+
+        # Enviar Webhook de Erro
+        try:
+            coerced_id = uuid.UUID(exame_id) if isinstance(exame_id, str) else exame_id
+            exame = exame_repo.get_exame(self.db, coerced_id)
+            if exame and exame.webhook_url:
+                webhook_service.send_notification_sync(
+                    exame.webhook_url,
+                    {
+                        "exame_id": str(exame_id),
+                        "status": "erro",
+                        "error_message": str(e),
+                        "patient_id": exame.patient_id,
+                    }
+                )
+            
+            # Notificar erro no lote se houver
+            if exame and exame.batch_id:
+                batch, just_completed = exame_repo.update_batch_progress(self.db, exame.batch_id, success=False)
+                if batch and just_completed and batch.webhook_url:
+                    webhook_service.send_notification_sync(
+                        batch.webhook_url,
+                        {
+                            "batch_id": str(batch.id),
+                            "status": "concluido_com_erros",
+                            "total_files": batch.total_files,
+                            "failed_files": batch.failed_files,
+                            "patient_id": batch.patient_id,
+                        }
+                    )
+        except Exception as webhook_error:
+            logger.error(f"Erro ao enviar webhook de erro: {webhook_error}")
+
         raise e
 
     finally:

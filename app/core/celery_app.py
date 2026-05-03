@@ -9,4 +9,6 @@ celery_app = Celery(
 )
 
 celery_app.conf.broker_connection_retry_on_startup = True
+celery_app.conf.worker_prefetch_multiplier = 1
+celery_app.conf.task_acks_late = True
 celery_app.autodiscover_tasks(["app.tasks"])

@@ -10,7 +10,7 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 from uuid import UUID
-from typing import Optional, Any, cast
+from typing import Optional, Any, cast, List
 from datetime import datetime
 
 from app.core.database import get_db
@@ -22,6 +22,7 @@ from app.schemas.exame import (
     ExameListResponse,
     ExameStatusResponse,
     ClinicalSummaryResponse,
+    BatchResponse,
 )
 from app.core.auth import verify_api_key
 
@@ -45,9 +46,10 @@ exame_service = ExameService()
     },
 )
 def upload_exame(
-    patient_id: int = Path(..., description="ID do paciente no Storge", example=42),
+    patient_id: int = Path(..., description="ID do paciente no Storge", examples=[42]),
     user_id: int = Query(..., description="ID do usuário que está fazendo o upload"),
-    file: UploadFile = File(..., description="Arquivo PDF do exame laboratorial"),
+    webhook_url: Optional[str] = Query(None, description="URL para notificação de conclusão"),
+    file: UploadFile = File(..., description="Arquivo PDF do exame laboratoriais"),
     db: Session = Depends(get_db),
     authenticated: bool = Depends(verify_api_key),
 ):
@@ -57,7 +59,49 @@ def upload_exame(
             status_code=400, detail="Apenas arquivos PDF são permitidos"
         )
 
-    return exame_service.processar_upload(db, patient_id, user_id, file)
+    return exame_service.processar_upload(db, patient_id, user_id, file, webhook_url=webhook_url)
+
+
+@router.post(
+    "/patients/{patient_id}/exames/batch",
+    response_model=BatchResponse,
+    status_code=201,
+    summary="Upload de exames em lote",
+    description="Permite enviar múltiplos PDFs de uma vez para um paciente.",
+)
+def upload_exames_batch(
+    patient_id: int = Path(..., description="ID do paciente no Storge", examples=[42]),
+    user_id: int = Query(..., description="ID do usuário que está fazendo o upload"),
+    webhook_url: Optional[str] = Query(None, description="URL para notificação de conclusão do lote"),
+    files: List[UploadFile] = File(..., description="Arquivos PDF dos exames"),
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_api_key),
+):
+    for file in files:
+        filename = file.filename or ""
+        if not filename.lower().endswith(".pdf"):
+            raise HTTPException(
+                status_code=400, detail=f"Arquivo {filename} não é um PDF"
+            )
+
+    return exame_service.processar_upload_batch(db, patient_id, user_id, files, webhook_url=webhook_url)
+
+
+@router.get(
+    "/exames/batch/{batch_id}",
+    response_model=BatchResponse,
+    summary="Status de um lote",
+    description="Retorna o progresso geral de um lote de exames.",
+)
+def get_batch_status(
+    batch_id: UUID = Path(..., description="UUID do lote"),
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_api_key),
+):
+    batch = exame_service.get_batch(db, batch_id)
+    if not batch:
+        raise HTTPException(status_code=404, detail="Lote não encontrado")
+    return batch
 
 
 @router.get(
@@ -74,7 +118,7 @@ def upload_exame(
     },
 )
 def list_exames(
-    patient_id: int = Path(..., description="ID do paciente no Storge", example=42),
+    patient_id: int = Path(..., description="ID do paciente no Storge", examples=[42]),
     page: int = Query(1, ge=1, description="Número da página"),
     limit: int = Query(10, ge=1, le=100, description="Itens por página"),
     db: Session = Depends(get_db),

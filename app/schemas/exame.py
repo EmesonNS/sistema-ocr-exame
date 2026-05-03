@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, Any
@@ -16,6 +16,8 @@ class ExameResponse(BaseModel):
         description="Status: pendente | processando | concluido | erro"
     )
     url_documento: str = Field(description="Caminho do arquivo PDF")
+    webhook_url: Optional[str] = Field(None, description="URL para notificação de conclusão")
+    is_digitally_signed: bool = Field(False, description="Indica se o PDF possui assinatura digital")
 
     # Progress tracking fields
     processing_stage: Optional[str] = Field(
@@ -38,9 +40,9 @@ class ExameResponse(BaseModel):
         description="Indica se o exame possui resumo clínico gerado",
     )
 
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                 "patient_id": 42,
@@ -52,7 +54,8 @@ class ExameResponse(BaseModel):
                 "processing_percent": 100,
                 "processing_message": "Processamento concluído - 15 biomarcadores extraídos",
             }
-        }
+        },
+    )
 
 
 class ResultadoBiomarcadorResponse(BaseModel):
@@ -112,9 +115,9 @@ class ResultadoBiomarcadorResponse(BaseModel):
     )
     confianca: float = Field(1.0, description="Nível de confiança (0.0 a 1.0)")
 
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
                 "nome_marcador": "SEGMENTADOS",
@@ -132,7 +135,8 @@ class ResultadoBiomarcadorResponse(BaseModel):
                 "correcao_aplicada": None,
                 "confianca": 1.0,
             }
-        }
+        },
+    )
 
 
 class DetalheExameResponse(BaseModel):
@@ -168,8 +172,7 @@ class DetalheExameResponse(BaseModel):
         description="Indica se o exame possui resumo clínico gerado",
     )
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ExameListResponse(BaseModel):
@@ -180,10 +183,9 @@ class ExameListResponse(BaseModel):
     page: int = Field(description="Página atual")
     pages: int = Field(description="Total de páginas")
 
-    class Config:
-        json_schema_extra = {
-            "example": {"items": [], "total": 0, "page": 1, "pages": 0}
-        }
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"items": [], "total": 0, "page": 1, "pages": 0}}
+    )
 
 
 class ExameStatusResponse(BaseModel):
@@ -211,8 +213,8 @@ class ExameStatusResponse(BaseModel):
         description="Indica se o exame possui resumo clínico gerado",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "processando",
                 "processing_stage": "ai_analyzing",
@@ -221,6 +223,7 @@ class ExameStatusResponse(BaseModel):
                 "has_summary": False,
             }
         }
+    )
 
 
 # Schema para input de normalização (uso interno)
@@ -293,9 +296,9 @@ class ClinicalSummaryResponse(BaseModel):
         None, description="Data e hora da geração do resumo"
     )
 
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "resumo_geral": "O hemograma apresenta alterações nos leucócitos...",
                 "alertas": [
@@ -312,4 +315,22 @@ class ClinicalSummaryResponse(BaseModel):
                 "proximos_passos": ["Repetir exame em 15 dias se sintomas persistirem"],
                 "generated_at": "2026-02-21T10:30:00Z",
             }
-        }
+        },
+    )
+
+
+class BatchResponse(BaseModel):
+    """Resposta para operações de lote."""
+
+    id: UUID
+    patient_id: int
+    status: str
+    total_files: int
+    completed_files: int
+    failed_files: int
+    created_at: datetime
+    webhook_url: Optional[str] = None
+    exames: List[ExameResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+

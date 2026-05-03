@@ -11,6 +11,7 @@ Analisa biomarcadores extraídos e gera insights clínicos estruturados:
 
 import json
 import logging
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -188,8 +189,13 @@ class ClinicalSummaryService:
             logger.warning(f"Sem biomarcadores para analisar no exame {exame_id}")
             return None
 
-        # Early exit: verificar se já existe resumo
-        exame = db.query(Exame).filter(Exame.id == exame_id).first()
+        # Operação de DB é bloqueante, rodar em thread
+        loop = asyncio.get_event_loop()
+        
+        def get_exame_sync():
+            return db.query(Exame).filter(Exame.id == exame_id).first()
+        
+        exame = await loop.run_in_executor(None, get_exame_sync)
         if not exame:
             logger.error(f"Exame {exame_id} não encontrado")
             return None
@@ -205,9 +211,9 @@ class ClinicalSummaryService:
                 biomarcadores_formatados=biomarcadores_text
             )
 
-            # Chamar IA
-            logger.info(f"Gerando resumo clínico para exame {exame_id}")
-            response = self.client.models.generate_content(
+            # Chamar IA (Async SDK)
+            logger.info(f"Gerando resumo clínico para exame {exame_id} (Async)")
+            response = await self.client.aio.models.generate_content(
                 model=self.model,
                 contents=[prompt],
             )
@@ -218,18 +224,21 @@ class ClinicalSummaryService:
                 logger.error(f"Falha ao parsear resposta para exame {exame_id}")
                 return None
 
-            # Salvar no banco
-            now = datetime.now(timezone.utc)
-            stmt = (
-                update(Exame)
-                .where(Exame.id == exame_id)
-                .values(
-                    clinical_summary=summary,
-                    summary_generated_at=now,
+            # Salvar no banco (bloqueante)
+            def save_summary_sync():
+                now = datetime.now(timezone.utc)
+                stmt = (
+                    update(Exame)
+                    .where(Exame.id == exame_id)
+                    .values(
+                        clinical_summary=summary,
+                        summary_generated_at=now,
+                    )
                 )
-            )
-            db.execute(stmt)
-            db.commit()
+                db.execute(stmt)
+                db.commit()
+            
+            await loop.run_in_executor(None, save_summary_sync)
 
             logger.info(
                 f"Resumo clínico gerado para exame {exame_id} - "
@@ -240,7 +249,9 @@ class ClinicalSummaryService:
 
         except Exception as e:
             logger.exception(f"Erro ao gerar resumo clínico para exame {exame_id}: {e}")
-            db.rollback()
+            def rollback_sync():
+                db.rollback()
+            await loop.run_in_executor(None, rollback_sync)
             return None
 
     async def regenerate_summary(
@@ -266,17 +277,22 @@ class ClinicalSummaryService:
 
         logger.info(f"Regenerando resumo clínico para exame {exame_id}")
 
-        # Limpar resumo existente
-        stmt = (
-            update(Exame)
-            .where(Exame.id == exame_id)
-            .values(
-                clinical_summary=None,
-                summary_generated_at=None,
+        # Limpar resumo existente (bloqueante)
+        loop = asyncio.get_event_loop()
+        
+        def clear_summary_sync():
+            stmt = (
+                update(Exame)
+                .where(Exame.id == exame_id)
+                .values(
+                    clinical_summary=None,
+                    summary_generated_at=None,
+                )
             )
-        )
-        db.execute(stmt)
-        db.commit()
+            db.execute(stmt)
+            db.commit()
+        
+        await loop.run_in_executor(None, clear_summary_sync)
 
         # Gerar novo resumo
         return await self.generate_clinical_summary(db, exame_id, biomarcadores)

@@ -6,16 +6,20 @@ determinística de normalização de biomarcadores.
 """
 
 from google import genai
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from pdf2image import convert_from_path
 from decimal import Decimal
 from typing import Optional
 from app.core.config import settings
+from app.core.cache import get_redis_client
 from app.services.biomarker_normalization import normalizar_resultado_biomarcador
+from app.services.guardrails_service import GuardrailsService
 import base64
 import io
 import json
 import logging
+import hashlib
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -66,17 +70,24 @@ class AIService:
         self.google_model = "gemini-2.0-flash"
         self.openrouter_model = "google/gemini-2.5-flash"
         self.openrouter_client = None
+        self.async_openrouter_client = None
+        self.guardrails = GuardrailsService()
+
         if settings.OPENROUTER_API_KEY:
             self.openrouter_client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=settings.OPENROUTER_API_KEY,
             )
+            self.async_openrouter_client = AsyncOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=settings.OPENROUTER_API_KEY,
+            )
 
-    def extrair_biomarcadores(
+    async def extrair_biomarcadores(
         self, file_path: str, leucocitos_total: Optional[Decimal] = None
     ) -> tuple[list[dict], Optional[str], Optional[str]]:
         """
-        Extrai biomarcadores do exame e normaliza resultados.
+        Extrai biomarcadores do exame e normaliza resultados de forma assíncrona.
 
         Args:
             file_path: Caminho do arquivo PDF/imagem
@@ -86,18 +97,24 @@ class AIService:
             Tupla (resultados_normalizados, data_coleta, laboratorio)
         """
         if self.google_client:
-            dados = self._extrair_via_google(file_path)
+            dados = await self._extrair_via_google_async(file_path)
             if dados and dados.get("biomarcadores"):
-                return self._processar_biomarcadores(dados, leucocitos_total)
+                resultados, dt, lab = self._processar_biomarcadores(dados, leucocitos_total)
+                # Aplicar Guardrails Fisiológicos
+                resultados = self.guardrails.sanitize_results(resultados)
+                return resultados, dt, lab
 
         # Fallback para OpenRouter
-        if self.openrouter_client:
+        if self.async_openrouter_client:
             logger.warning(
-                "Google Gemini falhou ou retornou vazio, tentando OpenRouter"
+                "Google Gemini falhou ou retornou vazio, tentando OpenRouter (Async)"
             )
-            dados = self._extrair_via_openrouter(file_path)
+            dados = await self._extrair_via_openrouter_async(file_path)
             if dados and dados.get("biomarcadores"):
-                return self._processar_biomarcadores(dados, leucocitos_total)
+                resultados, dt, lab = self._processar_biomarcadores(dados, leucocitos_total)
+                # Aplicar Guardrails Fisiológicos
+                resultados = self.guardrails.sanitize_results(resultados)
+                return resultados, dt, lab
 
         logger.error(
             "Ambos os provedores falharam na extração - retornando lista vazia"
@@ -149,18 +166,22 @@ class AIService:
         Returns:
             Dict com 'resultados' (lista de biomarcadores normalizados)
         """
-        resultados, _, _ = self.extrair_biomarcadores(file_path)
+        # Note: This remains synchronous for backward compatibility if needed, 
+        # but internal calls in this project should use the async version.
+        import asyncio
+        resultados, _, _ = asyncio.run(self.extrair_biomarcadores(file_path))
         return {"resultados": resultados}
 
-    def _extrair_via_google(self, file_path: str) -> dict | None:
+    async def _extrair_via_google_async(self, file_path: str) -> dict | None:
         # Early exit: cliente não configurado
         if not self.google_client:
             return None
 
         try:
+            # Upload de arquivo (atualmente síncrono na SDK)
             uploaded_file = self.google_client.files.upload(file=file_path)
 
-            response = self.google_client.models.generate_content(
+            response = await self.google_client.aio.models.generate_content(
                 model=self.google_model,
                 contents=[uploaded_file, PROMPT_EXAME],
             )
@@ -169,51 +190,86 @@ class AIService:
             if not text:
                 return None
 
-            logger.info("Resposta recebida do Google Gemini")
+            logger.info("Resposta recebida do Google Gemini (Async)")
             return self._parse_response(text)
 
         except Exception as e:
-            logger.error(f"Erro no Google Gemini: {e}")
+            logger.error(f"Erro no Google Gemini (Async): {e}")
             return None
 
-    def _extrair_via_openrouter(self, file_path: str) -> dict | None:
+    async def _extrair_via_openrouter_async(self, file_path: str) -> dict | None:
         # Early exit: cliente não configurado
-        if not self.openrouter_client:
+        if not self.async_openrouter_client:
             return None
 
         try:
-            # Converte PDF em imagens (uma por página)
-            images = convert_from_path(file_path, dpi=200)
-            logger.info(f"PDF convertido em {len(images)} página(s)")
-
-            # Monta content parts: todas as páginas como imagens
-            content_parts = []
-            for i, img in enumerate(images):
-                buf = io.BytesIO()
-                img.save(buf, format="PNG")
-                img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-                content_parts.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{img_b64}",
-                        },
-                    }
+            # Verifica cache no Redis
+            redis_client = get_redis_client()
+            
+            # Leitura de arquivo é bloqueante, rodar em thread
+            loop = asyncio.get_event_loop()
+            def read_file_sync():
+                with open(file_path, "rb") as f:
+                    return f.read()
+            
+            file_bytes = await loop.run_in_executor(None, read_file_sync)
+            file_hash = hashlib.md5(file_bytes).hexdigest()
+            cache_key = f"pdf_images:{file_hash}"
+            
+            cached_data = await redis_client.get(cache_key)
+            if cached_data:
+                logger.info(f"Imagens do PDF ({file_hash}) carregadas do cache")
+                content_parts = json.loads(cached_data)
+            else:
+                # Converte PDF em imagens (CPU bound e bloqueante)
+                def convert_sync():
+                    return convert_from_path(
+                        file_path,
+                        dpi=200,
+                        first_page=1,
+                        last_page=settings.MAX_PDF_PAGES_FALLBACK,
+                    )
+                
+                images = await loop.run_in_executor(None, convert_sync)
+                logger.info(
+                    f"PDF convertido em {len(images)} página(s) "
+                    f"(limite: {settings.MAX_PDF_PAGES_FALLBACK})"
                 )
 
-            content_parts.append(
+                # Monta content parts (Conversão para Base64 também pode ser pesada)
+                def encode_images_sync():
+                    parts = []
+                    for img in images:
+                        buf = io.BytesIO()
+                        img.save(buf, format="PNG")
+                        img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+                        parts.append({
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{img_b64}"}
+                        })
+                    return parts
+
+                content_parts = await loop.run_in_executor(None, encode_images_sync)
+                
+                # Salva no cache por 24h (86400 segundos)
+                await redis_client.set(cache_key, json.dumps(content_parts), ex=86400)
+
+            # Adiciona o texto do prompt por último
+            # Copiamos a lista para não alterar o cache armazenado
+            final_content_parts = list(content_parts)
+            final_content_parts.append(
                 {
                     "type": "text",
                     "text": PROMPT_EXAME,
                 }
             )
 
-            response = self.openrouter_client.chat.completions.create(
+            response = await self.async_openrouter_client.chat.completions.create(
                 model=self.openrouter_model,
                 messages=[
                     {
                         "role": "user",
-                        "content": content_parts,
+                        "content": final_content_parts,
                     }
                 ],
             )
@@ -221,31 +277,32 @@ class AIService:
             text = response.choices[0].message.content
             if not text:
                 return None
-            logger.info("Resposta recebida do OpenRouter (fallback)")
+            logger.info("Resposta recebida do OpenRouter (fallback async)")
             return self._parse_response(text)
 
         except Exception as e:
             error_str = str(e)
-            # Verifica se é erro de rate limit (429) ou crédito insuficiente
             if (
                 "429" in error_str
                 or "rate" in error_str.lower()
                 or "insufficient" in error_str.lower()
             ):
                 logger.error(
-                    f"OpenRouter: Erro 429/Rate Limit/Crédito insuficiente: {e}"
+                    f"OpenRouter Async: Erro 429/Rate Limit/Crédito insuficiente: {e}"
                 )
             else:
-                logger.error(f"Erro no OpenRouter (fallback): {e}")
+                logger.error(f"Erro no OpenRouter (fallback async): {e}")
             return None
 
     def _parse_response(self, text: str) -> dict | None:
         """
-        Parse da resposta da IA para JSON.
-
-        Nota: A classificação de alerta agora é feita pela camada
-        determinística de normalização, não mais aqui.
+        Parse da resposta da IA para JSON com detecção de injeção.
         """
+        # Detecção de Prompt Injection no output (Self-Check)
+        if self.guardrails.detect_prompt_injection(text):
+            logger.critical("BLOQUEIO DE SEGURANÇA: Tentativa de Prompt Injection detectada no output da IA.")
+            return None
+
         try:
             cleaned = text.replace("```json", "").replace("```", "").strip()
             dados = json.loads(cleaned)

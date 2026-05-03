@@ -31,6 +31,24 @@ class ProcessingStage:
     FAILED = "failed"
 
 
+class ExameBatch(Base):
+    """Agrupamento de múltiplos exames para processamento em lote."""
+
+    __tablename__ = "exame_batches"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(BigInteger, nullable=False, index=True)
+    status = Column(String(20), default="pendente")  # pendente | processando | concluido | erro
+    created_at = Column(DateTime, default=datetime.utcnow)
+    webhook_url = Column(String, nullable=True)
+    
+    total_files = Column(Integer, default=0)
+    completed_files = Column(Integer, default=0)
+    failed_files = Column(Integer, default=0)
+
+    exames = relationship("Exame", back_populates="batch")
+
+
 class Exame(Base):
     __tablename__ = "exames"
 
@@ -41,6 +59,9 @@ class Exame(Base):
     laboratorio = Column(String)
     url_documento = Column(String)
     status_processamento = Column(String, default="pendente")
+    webhook_url = Column(String, nullable=True)
+    is_digitally_signed = Column(Boolean, default=False)
+    batch_id = Column(GUID(), ForeignKey("exame_batches.id"), nullable=True)
 
     # Progress tracking fields
     processing_stage = Column(String(50), nullable=True)
@@ -52,6 +73,7 @@ class Exame(Base):
     summary_generated_at = Column(DateTime(timezone=True), nullable=True)
 
     resultados = relationship("ResultadoBiomarcador", back_populates="exame")
+    batch = relationship("ExameBatch", back_populates="exames")
 
     @property
     def has_summary(self) -> bool:

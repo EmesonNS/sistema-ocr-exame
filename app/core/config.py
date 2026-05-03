@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # External services
     GEMINI_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
+    MAX_PDF_PAGES_FALLBACK: int = 5
 
     # API Key (opcional - para uso administrativo via CLI)
     MASTER_API_KEY: str = ""

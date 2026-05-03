@@ -14,3 +14,4 @@ redis==5.0.1
 # pyjwt>=2.8.0  # Removido - usando API Keys em vez de JWT
 alembic>=1.13.0
 httpx==0.24.1
+pypdf>=4.0.0

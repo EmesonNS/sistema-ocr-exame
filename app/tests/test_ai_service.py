@@ -1,12 +1,13 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 
 class TestAIService:
     """Testes do serviço de IA"""
 
+    @pytest.mark.asyncio
     @patch("google.genai.Client")
-    def test_extrair_biomarcadores_gemini_success(self, mock_genai_client_class):
+    async def test_extrair_biomarcadores_gemini_success(self, mock_genai_client_class):
         """Extração via Gemini deve retornar biomarcadores normalizados"""
         from app.services.ai_service import AIService
 
@@ -23,12 +24,13 @@ class TestAIService:
             "laboratorio": "Lab Teste"
         }
         """
-        mock_client.models.generate_content.return_value = mock_response
+        # Mock do aio (async) models do Gemini usando AsyncMock
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
         mock_client.files.upload.return_value = "mock_file"
         mock_genai_client_class.return_value = mock_client
 
         service = AIService()
-        resultados, data_coleta, laboratorio = service.extrair_biomarcadores(
+        resultados, data_coleta, laboratorio = await service.extrair_biomarcadores(
             "fake_path.pdf"
         )
 
