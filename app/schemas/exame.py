@@ -108,12 +108,23 @@ class ResultadoBiomarcadorResponse(BaseModel):
         None, description="Fonte: ocr | calculado | corrigido"
     )
 
+    # Interoperabilidade (Fase 7)
+    loinc_code: Optional[str] = Field(None, description="Código LOINC associado ao biomarcador")
+
     # Qualidade
     needs_review: bool = Field(False, description="Requer revisão manual")
     correcao_aplicada: Optional[str] = Field(
         None, description="Descrição da correção aplicada"
     )
     confianca: float = Field(1.0, description="Nível de confiança (0.0 a 1.0)")
+
+    # Rastreabilidade Visual (Fase 7)
+    page_number: Optional[int] = Field(None, description="Número da página onde o dado foi encontrado")
+    bounding_box: Optional[List[float]] = Field(None, description="Coordenadas [ymin, xmin, ymax, xmax] normalizadas (0-1000)")
+
+    # Auditoria Humana (Fase 8)
+    is_human_verified: bool = Field(False, description="Indica se o resultado foi validado por um humano")
+    verified_at: Optional[datetime] = Field(None, description="Data e hora da verificação humana")
 
     model_config = ConfigDict(
         from_attributes=True,

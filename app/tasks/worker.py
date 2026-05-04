@@ -14,6 +14,8 @@ from app.core.database import SessionLocal
 from app.services.ai_service import AIService
 from app.services.clinical_summary_service import ClinicalSummaryService
 from app.services.webhook_service import WebhookService
+from app.services.interoperability_service import InteroperabilityService
+from app.services.biomarker_normalization import normalizar_resultado_biomarcador
 from app.repositories.exame_repo import ExameRepository
 from app.models.exame import ProcessingStage
 from typing import Dict, Any
@@ -45,6 +47,7 @@ class DatabaseTask(Task):
 ai_service = AIService()
 clinical_summary_service = ClinicalSummaryService()
 webhook_service = WebhookService()
+interoperability_service = InteroperabilityService()
 exame_repo = ExameRepository()
 
 
@@ -121,8 +124,59 @@ def processar_exame_task(self, exame_id: str, file_path: str):
 
         # 7. Salvar resultados
         if resultados:
+            # Mapeamento LOINC (Fase 7)
             for res in resultados:
+                res["loinc_code"] = interoperability_service.map_to_loinc(
+                    res.get("nome_marcador_normalizado")
+                )
                 exame_repo.add_resultado_normalizado(self.db, exame_id, res)
+
+            # 7.1 Agentic Loop: Re-inspeção de valores suspeitos (Fase 7)
+            suspeitos = [r for r in resultados if r.get("needs_review") and r.get("bounding_box")]
+            if suspeitos:
+                logger.info(f"Fase 7: {len(suspeitos)} biomarcadores suspeitos detectados. Iniciando Agentic Loop.")
+                for res in suspeitos:
+                    try:
+                        # Executa re-extração focada
+                        re_inspecao = asyncio.run(
+                            ai_service.focar_extracao(
+                                file_path=file_path,
+                                page_number=res.get("page_number", 1),
+                                bounding_box=res.get("bounding_box"),
+                                nome_marcador=res.get("nome_marcador_normalizado")
+                            )
+                        )
+                        
+                        if re_inspecao and re_inspecao.get("valor_raw"):
+                            logger.info(f"Re-inspeção concluída para {res.get('nome_marcador_normalizado')}. Novo valor: {re_inspecao['valor_raw']}")
+                            
+                            # Se o valor mudou, aplicamos re-normalização determinística (Fase 7.1)
+                            if re_inspecao["valor_raw"] != res["valor_raw"]:
+                                # Re-normalizar usando a camada determinística
+                                normalizado_novo = normalizar_resultado_biomarcador(
+                                    nome_marcador=res.get("nome_marcador_normalizado"),
+                                    valor_raw=re_inspecao["valor_raw"],
+                                    unidade_raw=res.get("unidade_medida_normalizada"),
+                                    referencia_raw=res.get("referencia_lab"),
+                                    contexto={} # Contexto pode ser expandido se necessário
+                                )
+
+                                # Atualiza o objeto de resultado com os novos valores processados
+                                res["correcao_aplicada"] = (
+                                    f"{res.get('correcao_aplicada', '')} | "
+                                    f"Agentic Loop: Valor original '{res['valor_raw']}' corrigido para '{re_inspecao['valor_raw']}' após zoom."
+                                )
+                                res["valor_raw"] = re_inspecao["valor_raw"]
+                                res["valor_numerico"] = normalizado_novo.get("valor_numerico")
+                                res["valor_extraido"] = normalizado_novo.get("valor_extraido")
+                                res["status_alerta"] = normalizado_novo.get("status_alerta")
+                                res["confianca"] = max(res.get("confianca", 0), re_inspecao.get("confianca_reinspecao", 0))
+                                
+                                # Persistir atualização no banco
+                                exame_repo.update_resultado_reinspecionado(self.db, exame_id, res)
+
+                    except Exception as loop_error:
+                        logger.error(f"Erro no Agentic Loop para {res.get('nome_marcador_normalizado')}: {loop_error}")
 
             # 8. Gerar resumo clínico (passo opcional/final)
             try:

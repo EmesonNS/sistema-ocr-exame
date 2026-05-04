@@ -16,10 +16,17 @@
 - **DEC-008:** Atomic increments for Batch progress.
 - **DEC-009:** Implemented `GuardrailsService` for medical data integrity.
 - **DEC-010:** Keyword-based Prompt Injection detection in LLM output.
+- **DEC-011:** Visual Traceability coordinates normalized to 0-1000 scale [ymin, xmin, ymax, xmax].
+- **DEC-012:** Support for multi-page visual citations in `ResultadoBiomarcador`.
+- **DEC-013:** Re-normalization triggered after Agentic Loop to ensure numeric integrity.
+- **DEC-014:** Expansion of `PHYSIOLOGICAL_RANGES` to include endocrine and vitamin panels.
+- **DEC-015:** Visual Evidence Crop API with Redis caching (exp: 1h) to support human audit.
+- **DEC-016:** Human verification tracking in `ResultadoBiomarcador`.
 
 ## Blockers
 - None.
 
 ## Todos
 - [ ] Monitor performance and safety in real-world scenarios.
-- [ ] Expand `PHYSIOLOGICAL_RANGES` with more biomarkers.
+- [ ] Build Frontend for Audit Dashboard.
+- [ ] Execute Phase 9 (Production Maturity & Clinical Standardization).

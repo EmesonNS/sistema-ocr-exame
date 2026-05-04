@@ -293,7 +293,43 @@ class ExameRepository:
             needs_review=resultado.get("needs_review", False),
             correcao_aplicada=resultado.get("correcao_aplicada"),
             confianca=resultado.get("confianca", 1.0),
+            page_number=resultado.get("page_number"),
+            bounding_box=resultado.get("bounding_box"),
+            loinc_code=resultado.get("loinc_code"),
         )
         db.add(db_resultado)
         db.commit()
         return db_resultado
+
+    def update_resultado_reinspecionado(self, db: Session, exame_id: str, resultado_dict: dict):
+        """Atualiza a nota de re-inspeção em um resultado existente."""
+        coerced_id = self._coerce_exame_id(exame_id) or exame_id
+        db_res = db.query(ResultadoBiomarcador).filter(
+            ResultadoBiomarcador.exame_id == coerced_id,
+            ResultadoBiomarcador.nome_marcador == resultado_dict.get("nome_marcador_normalizado")
+        ).first()
+        
+        if db_res:
+            db_res.correcao_aplicada = resultado_dict.get("correcao_aplicada")
+            db_res.valor_raw = resultado_dict.get("valor_raw")
+            db_res.valor_numerico = resultado_dict.get("valor_numerico")
+            db_res.valor_extraido = resultado_dict.get("valor_extraido")
+            db_res.status_alerta = resultado_dict.get("status_alerta")
+            db_res.confianca = resultado_dict.get("confianca", 1.0)
+            db.commit()
+            db.refresh(db_res)
+        return db_res
+
+    def get_resultado(self, db: Session, resultado_id: uuid.UUID) -> Optional[ResultadoBiomarcador]:
+        """Busca um resultado de biomarcador por ID."""
+        return db.query(ResultadoBiomarcador).filter(ResultadoBiomarcador.id == resultado_id).first()
+
+    def verify_resultado(self, db: Session, resultado_id: uuid.UUID) -> Optional[ResultadoBiomarcador]:
+        """Marca um resultado como verificado por um humano."""
+        db_res = self.get_resultado(db, resultado_id)
+        if db_res:
+            db_res.is_human_verified = True
+            db_res.verified_at = datetime.utcnow()
+            db.commit()
+            db.refresh(db_res)
+        return db_res

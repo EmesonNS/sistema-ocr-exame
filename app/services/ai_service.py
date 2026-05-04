@@ -24,13 +24,15 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 PROMPT_EXAME = """
-Analise este exame laboratorial e extraia:
+Analise este exame laboratorial e extraia os biomarcadores com alta precisão espacial.
 
 Para cada biomarcador encontrado:
 - nome: nome do marcador (ex: "HEMOGLOBINA", "LEUCÓCITOS", "SEGMENTADOS")
 - valor_raw: valor EXATAMENTE como aparece no documento (ex: "49,0", "5500", "< 10")
 - unidade: unidade como aparece (ex: "%", "/mm³", "g/dL")
 - tipo: "percentual" se tiver %, "absoluto" se for número puro, "textual" se for texto
+- page: número da página (começando em 1) onde o biomarcador foi encontrado
+- bounding_box: coordenadas [ymin, xmin, ymax, xmax] normalizadas de 0 a 1000 que englobam o NOME e o VALOR do biomarcador na página.
 
 IMPORTANTE:
 - NÃO CONVERTA valores percentuais para absolutos
@@ -49,7 +51,9 @@ Retorne em JSON:
       "nome": "string",
       "valor_raw": "string",
       "unidade": "string", 
-      "tipo": "percentual|absoluto|textual"
+      "tipo": "percentual|absoluto|textual",
+      "page": number,
+      "bounding_box": [ymin, xmin, ymax, xmax]
     }
   ],
   "data_coleta": "string|null",
@@ -152,6 +156,11 @@ class AIService:
                 referencia_raw=item.get("referencia", ""),
                 contexto=contexto,
             )
+            
+            # Adiciona metadados de rastreabilidade visual (Fase 7)
+            normalizado["page_number"] = item.get("page")
+            normalizado["bounding_box"] = item.get("bounding_box")
+            
             resultados.append(normalizado)
 
         return resultados, data_coleta, laboratorio
@@ -292,6 +301,91 @@ class AIService:
                 )
             else:
                 logger.error(f"Erro no OpenRouter (fallback async): {e}")
+            return None
+
+    async def focar_extracao(
+        self, file_path: str, page_number: int, bounding_box: list[int], nome_marcador: str
+    ) -> dict | None:
+        """
+        Realiza uma extração focada em uma região específica (zoom) para confirmar um valor suspeito.
+        """
+        logger.info(f"Iniciando extração focada para {nome_marcador} na página {page_number}")
+
+        try:
+            # 1. Converter página específica do PDF
+            loop = asyncio.get_event_loop()
+            def get_page_image():
+                return convert_from_path(
+                    file_path,
+                    dpi=300, # Maior DPI para zoom
+                    first_page=page_number,
+                    last_page=page_number,
+                )[0]
+            
+            image = await loop.run_in_executor(None, get_page_image)
+            width, height = image.size
+
+            # 2. Calcular coordenadas de recorte com margem (padding)
+            # bounding_box: [ymin, xmin, ymax, xmax] em escala 0-1000
+            ymin, xmin, ymax, xmax = bounding_box
+            
+            # Adicionar 10% de margem
+            pad_h = (ymax - ymin) * 0.1
+            pad_w = (xmax - xmin) * 0.1
+            
+            left = max(0, (xmin - pad_w) * width / 1000)
+            top = max(0, (ymin - pad_h) * height / 1000)
+            right = min(width, (xmax + pad_w) * width / 1000)
+            bottom = min(height, (ymax + pad_h) * height / 1000)
+
+            # 3. Recortar imagem
+            cropped_image = image.crop((left, top, right, bottom))
+            
+            # 4. Enviar para IA com prompt especializado
+            buf = io.BytesIO()
+            cropped_image.save(buf, format="PNG")
+            img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+            prompt = f"""
+            Analise este recorte ampliado de um exame laboratorial.
+            Foco no biomarcador: {nome_marcador}
+            
+            Extraia EXATAMENTE o valor numérico que aparece nesta imagem.
+            Ignore qualquer outro texto.
+            
+            Retorne APENAS um JSON:
+            {{
+                "valor_raw": "string",
+                "confianca_reinspecao": float (0.0-1.0)
+            }}
+            """
+
+            if self.google_client:
+                # O Google Client SDK atual pode não suportar bytes diretamente no generate_content de forma async fácil 
+                # sem upload. Para simplicidade, usamos OpenRouter aqui ou implementamos via bytes se suportado.
+                # Como já temos o base64, OpenRouter é mais direto agora.
+                pass
+
+            if self.async_openrouter_client:
+                response = await self.async_openrouter_client.chat.completions.create(
+                    model=self.openrouter_model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_b64}"}}
+                            ],
+                        }
+                    ],
+                )
+                text = response.choices[0].message.content
+                return self._parse_response(text)
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Erro na extração focada: {e}")
             return None
 
     def _parse_response(self, text: str) -> dict | None:

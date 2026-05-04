@@ -7,7 +7,9 @@ from fastapi import (
     Query,
     Path,
     Header,
+    Response,
 )
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional, Any, cast, List
@@ -16,6 +18,8 @@ from datetime import datetime
 from app.core.database import get_db
 from app.services.exame_service import ExameService
 from app.services.clinical_summary_service import ClinicalSummaryService
+from app.services.interoperability_service import InteroperabilityService
+from app.services.evidence_service import EvidenceService
 from app.schemas.exame import (
     ExameResponse,
     DetalheExameResponse,
@@ -23,11 +27,14 @@ from app.schemas.exame import (
     ExameStatusResponse,
     ClinicalSummaryResponse,
     BatchResponse,
+    ResultadoBiomarcadorResponse,
 )
 from app.core.auth import verify_api_key
 
 router = APIRouter()
 exame_service = ExameService()
+interoperability_service = InteroperabilityService()
+evidence_service = EvidenceService()
 
 
 @router.post(
@@ -355,3 +362,112 @@ async def regenerate_clinical_summary(
         proximos_passos=summary.get("proximos_passos", []),
         generated_at=cast(Optional[datetime], exame.summary_generated_at),
     )
+
+# ========================================
+# Interoperability Endpoints (Fase 7)
+# ========================================
+
+
+@router.get(
+    "/exames/{exame_id}/fhir",
+    summary="Exportar exame em formato FHIR R4",
+    description=(
+        "Gera um FHIR Bundle contendo recursos Observation para cada "
+        "biomarcador extraído, usando códigos LOINC quando disponíveis."
+    ),
+    responses={
+        200: {"description": "Bundle FHIR R4"},
+        401: {"description": "API Key ausente ou inválida"},
+        404: {"description": "Exame não encontrado"},
+    },
+)
+def get_exame_fhir(
+    exame_id: UUID = Path(..., description="UUID do exame"),
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_api_key),
+):
+    exame = exame_service.get_exame(db, exame_id)
+    if not exame:
+        raise HTTPException(status_code=404, detail="Exame não encontrado")
+
+    if not exame.resultados:
+        raise HTTPException(status_code=404, detail="Exame não possui resultados para exportar")
+
+    observations = []
+    for res in exame.resultados:
+        obs = interoperability_service.convert_to_fhir_observation(res, exame.patient_id)
+        observations.append({
+            "fullUrl": f"http://hl7.org/fhir/Observation/{res.id}",
+            "resource": obs
+        })
+
+    bundle = {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "entry": observations
+    }
+
+    return bundle
+
+# ========================================
+# Audit & Evidence Endpoints (Fase 8)
+# ========================================
+
+
+@router.get(
+    "/exames/{exame_id}/resultados/{resultado_id}/evidence",
+    summary="Recuperar evidência visual (crop)",
+    description=(
+        "Retorna uma imagem (PNG) contendo o recorte exato do documento original "
+        "onde o biomarcador foi encontrado. Útil para auditoria humana rápida."
+    ),
+    responses={
+        200: {"content": {"image/png": {}}, "description": "Recorte da evidência visual"},
+        404: {"description": "Exame ou resultado não encontrado"},
+    }
+)
+async def get_resultado_evidence(
+    exame_id: UUID = Path(...),
+    resultado_id: UUID = Path(...),
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_api_key),
+):
+    exame = exame_service.get_exame(db, exame_id)
+    if not exame:
+        raise HTTPException(status_code=404, detail="Exame não encontrado")
+
+    # Procurar o resultado específico
+    resultado = None
+    for r in exame.resultados:
+        if r.id == resultado_id:
+            resultado = r
+            break
+
+    if not resultado:
+        raise HTTPException(status_code=404, detail="Resultado não encontrado")
+
+    img_bytes = await evidence_service.get_visual_evidence(exame, resultado)
+    if not img_bytes:
+        raise HTTPException(status_code=404, detail="Não foi possível gerar a evidência visual")
+
+    return Response(content=img_bytes, media_type="image/png")
+
+
+@router.post(
+    "/exames/{exame_id}/resultados/{resultado_id}/verify",
+    response_model=ResultadoBiomarcadorResponse,
+    summary="Marcar resultado como verificado",
+    description="Registra que um humano validou os dados extraídos para este biomarcador.",
+)
+def verify_resultado(
+    exame_id: UUID = Path(...),
+    resultado_id: UUID = Path(...),
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_api_key),
+):
+    # O repositório já faz o commit e refresh
+    res = exame_service.exame_repo.verify_resultado(db, resultado_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Resultado não encontrado")
+    return res

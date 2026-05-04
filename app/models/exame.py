@@ -122,4 +122,15 @@ class ResultadoBiomarcador(Base):
     confianca = Column(Float, default=1.0)  # 0.0 a 1.0
     fonte_valor = Column(String(50), default="ocr")  # 'ocr', 'calculado', 'corrigido'
 
+    # Campos de Rastreabilidade Visual (Fase 7)
+    bounding_box = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=True)  # [ymin, xmin, ymax, xmax]
+    page_number = Column(Integer, nullable=True)
+
+    # Campos de Interoperabilidade (Fase 7)
+    loinc_code = Column(String(20), nullable=True, index=True)
+
+    # Campos de Auditoria (Fase 8)
+    is_human_verified = Column(Boolean, default=False)
+    verified_at = Column(DateTime, nullable=True)
+
     exame = relationship("Exame", back_populates="resultados")

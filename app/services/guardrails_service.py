@@ -14,17 +14,26 @@ logger = logging.getLogger(__name__)
 # Faixas de plausibilidade fisiológica (Sanity Ranges)
 # Se o valor estiver FORA desta faixa, é provável que seja um erro de OCR/IA.
 PHYSIOLOGICAL_RANGES = {
-    "GLICOSE": (20, 1000),      # mg/dL
-    "HEMOGLOBINA": (3, 25),     # g/dL
-    "HEMATÓCRITO": (10, 75),    # %
-    "LEUCÓCITOS": (200, 300000), # /mm³
-    "PLAQUETAS": (5000, 1500000), # /mm³
-    "COLESTEROL TOTAL": (50, 600), # mg/dL
+    "GLICOSE": (20, 1000),  # mg/dL
+    "HEMOGLOBINA": (3, 25),  # g/dL
+    "HEMATÓCRITO": (10, 75),  # %
+    "LEUCÓCITOS": (200, 300000),  # /mm³
+    "PLAQUETAS": (5000, 1500000),  # /mm³
+    "COLESTEROL TOTAL": (50, 600),  # mg/dL
     "TRIGLICERÍDEOS": (20, 3000),  # mg/dL
-    "UREIA": (5, 400),           # mg/dL
-    "CREATININA": (0.1, 25),     # mg/dL
-    "SÓDIO": (100, 180),         # mEq/L
-    "POTÁSSIO": (1.5, 10),       # mEq/L
+    "UREIA": (5, 400),  # mg/dL
+    "CREATININA": (0.1, 25),  # mg/dL
+    "SÓDIO": (100, 180),  # mEq/L
+    "POTÁSSIO": (1.5, 10),  # mEq/L
+    # Expansão Fase 7.1
+    "TSH": (0.01, 100.0),  # uUI/mL
+    "T4 LIVRE": (0.1, 10.0),  # ng/dL
+    "VITAMINA B12": (50, 3000),  # pg/mL
+    "VITAMINA D": (4, 200),  # ng/mL
+    "ALBUMINA": (1.0, 7.0),  # g/dL
+    "CÁLCIO": (4.0, 20.0),  # mg/dL
+    "MAGNÉSIO": (0.5, 6.0),  # mg/dL
+    "TESTOSTERONA TOTAL": (10, 2000),  # ng/dL
 }
 
 # Palavras-chave que indicam possível injeção de prompt ou instrução maliciosa

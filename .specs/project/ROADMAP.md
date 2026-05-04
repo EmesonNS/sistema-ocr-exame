@@ -30,8 +30,19 @@
 - [x] Prompt Injection Detection (Output Self-Check)
 - [x] Automated sanitization of extracted results
 
-## Phase 7: Interoperability & Traceability (SOTA Next-Level)
-- [ ] Visual Citations (Bounding Boxes for human audit)
-- [ ] Automated LOINC mapping for biomarkers
-- [ ] FHIR R4 Compatibility for hospital EHR integration
-- [ ] Agentic Self-Correction Loop for high-risk values
+## Phase 7: Interoperability & Traceability (Completed)
+- [x] Visual Citations (Bounding Boxes for human audit)
+- [x] Automated LOINC mapping for biomarkers
+- [x] FHIR R4 Compatibility for hospital EHR integration
+- [x] Agentic Self-Correction Loop for high-risk values
+
+## Phase 8: Human-in-the-Loop & Audit (Completed)
+- [x] Evidence Crop API (Visual Proof)
+- [x] Human verification workflow
+- [ ] Auditor Dashboard
+
+## Phase 9: Production Maturity & Clinical Standardization
+- [ ] FHIR DiagnosticReport Grouping
+- [ ] Dynamic LOINC Mapping Strategy
+- [ ] Agentic Token & Cost Tracking
+- [ ] Data Retention Policy & Compliance Worker
