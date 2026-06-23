@@ -1,78 +1,138 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: ocr_db
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ocr_exames
+      POSTGRES_USER: ${DB_USER:?DB_USER is required}
+      POSTGRES_PASSWORD: ${DB_PASS:?DB_PASS is required}
+      POSTGRES_DB: ${DB_NAME:-ocr_exames}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
     networks:
       - ocr_network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ocr_exames" ]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
-    image: redis:alpine
-    container_name: ocr_redis
-    command: redis-server --requirepass ${REDIS_PASS}
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASS:?REDIS_PASS is required}
+    environment:
+      REDIS_PASS: ${REDIS_PASS:?REDIS_PASS is required}
+    volumes:
+      - redis_data:/data
     networks:
       - ocr_network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASS}\" ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  api:
-    build: .
-    container_name: ocr_api
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - .:/code
-      - ./uploads:/code/uploads
-    ports:
-      - "127.0.0.1:8001:8000"
+  migrate:
+    build:
+      context: .
+      target: runtime
+    command: alembic upgrade head
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@db:5432/ocr_exames
-      CELERY_BROKER_URL: redis://:${REDIS_PASS}@redis:6379/0
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASS}@redis:6379/0
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      CORS_ORIGINS: ${CORS_ORIGINS}
+      DATABASE_URL: postgresql://${DB_USER:?DB_USER is required}:${DB_PASS:?DB_PASS is required}@db:5432/${DB_NAME:-ocr_exames}
+      DB_USER: ${DB_USER:?DB_USER is required}
+      DB_PASS: ${DB_PASS:?DB_PASS is required}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ocr_exames}
+      REDIS_PASS: ${REDIS_PASS:?REDIS_PASS is required}
+      CELERY_BROKER_URL: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/0
+      CACHE_REDIS_URL: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/1
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      MASTER_API_KEY: ${MASTER_API_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173"]}
+      RUN_MIGRATIONS_ON_STARTUP: "false"
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
     networks:
       - ocr_network
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      target: runtime
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:?DB_USER is required}:${DB_PASS:?DB_PASS is required}@db:5432/${DB_NAME:-ocr_exames}
+      DB_USER: ${DB_USER:?DB_USER is required}
+      DB_PASS: ${DB_PASS:?DB_PASS is required}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ocr_exames}
+      REDIS_PASS: ${REDIS_PASS:?REDIS_PASS is required}
+      CELERY_BROKER_URL: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/0
+      CACHE_REDIS_URL: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/1
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      MASTER_API_KEY: ${MASTER_API_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173"]}
+      RUN_MIGRATIONS_ON_STARTUP: "false"
+    volumes:
+      - app_uploads:/code/uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - ocr_network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   worker:
-    build: .
-    container_name: ocr_worker
-    entrypoint: []
+    build:
+      context: .
+      target: runtime
     command: celery -A app.core.celery_app worker --loglevel=info
-    volumes:
-      - .:/code
-      - ./uploads:/code/uploads
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@db:5432/ocr_exames
-      CELERY_BROKER_URL: redis://:${REDIS_PASS}@redis:6379/0
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASS}@redis:6379/0
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-
+      DATABASE_URL: postgresql://${DB_USER:?DB_USER is required}:${DB_PASS:?DB_PASS is required}@db:5432/${DB_NAME:-ocr_exames}
+      DB_USER: ${DB_USER:?DB_USER is required}
+      DB_PASS: ${DB_PASS:?DB_PASS is required}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ocr_exames}
+      REDIS_PASS: ${REDIS_PASS:?REDIS_PASS is required}
+      CELERY_BROKER_URL: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/0
+      CACHE_REDIS_URL: redis://:${REDIS_PASS:?REDIS_PASS is required}@redis:6379/1
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      MASTER_API_KEY: ${MASTER_API_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173"]}
+      RUN_MIGRATIONS_ON_STARTUP: "false"
+    volumes:
+      - app_uploads:/code/uploads
     depends_on:
-      - db
-      - redis
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - ocr_network
 
 volumes:
   postgres_data:
-
+  redis_data:
+  app_uploads:
 
 networks:
   ocr_network:

@@ -38,3 +38,20 @@ Para cenários clínicos, a transparência é fundamental:
 5. Se disparado, o **Agentic Loop** realiza o zoom e correção.
 6. Mapeamento LOINC é aplicado.
 7. Resultado é salvo e Webhook é disparado.
+
+## Fronteira de Produção com Storge
+
+Em produção, o OCR não é uma API pública. O desenho alvo é:
+
+1. Browser acessa o Nginx público da VPS Hostinger.
+2. Nginx serve o frontend e encaminha `/api/*` para `storge-service`.
+3. `storge-service` autentica o usuário, extrai `userId` real e chama o OCR pela rede interna.
+4. OCR recebe `user_id` como query param e a API key no header `X-API-Key`.
+
+Fluxo decidido:
+
+```text
+Browser -> Nginx -> storge-service -> sistema-ocr-exame
+```
+
+O Nginx não deve publicar uma rota direta para `sistema-ocr-exame`.

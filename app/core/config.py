@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     REDIS_PASS: str = "password"
     CELERY_BROKER_URL: Optional[str] = None
     CELERY_RESULT_BACKEND: Optional[str] = None
+    CACHE_REDIS_URL: Optional[str] = None
 
     # External services
     GEMINI_API_KEY: str = ""
@@ -58,6 +59,12 @@ class Settings(BaseSettings):
         if self.CELERY_RESULT_BACKEND:
             return self.CELERY_RESULT_BACKEND
         return f"redis://:{self.REDIS_PASS}@redis:6379/0"
+
+    @property
+    def cache_redis_url(self) -> str:
+        if self.CACHE_REDIS_URL:
+            return self.CACHE_REDIS_URL
+        return f"redis://:{self.REDIS_PASS}@redis:6379/1"
 
     class Config:
         env_file = ".env"

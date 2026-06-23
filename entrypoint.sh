@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
-alembic upgrade head
+if [ "${RUN_MIGRATIONS_ON_STARTUP:-false}" = "true" ]; then
+  echo "Running database migrations..."
+  alembic upgrade head
+else
+  echo "Skipping database migrations on startup."
+fi
 
-echo "Starting API server..."
+echo "Starting process: $*"
 exec "$@"

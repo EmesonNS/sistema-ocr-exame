@@ -63,13 +63,15 @@ cd sistema-ocr-exame
 
 ### 2. Configure as variáveis de ambiente
 
-Copie o arquivo de exemplo e edite com suas credenciais:
+Escolha o ambiente e copie o arquivo de exemplo correspondente:
 
 ```bash
-cp .env.example .env
+cp .env.dev.example .env.dev
+cp .env.test.example .env.test
+cp .env.prod.example .env.prod
 ```
 
-Edite o arquivo `.env` com suas configurações:
+Edite o arquivo escolhido com suas configurações. Nunca versione arquivos `.env.*` reais.
 
 ```bash
 # Banco de dados
@@ -90,25 +92,45 @@ MASTER_API_KEY=sua_chave_mestra_segura_aqui  # OBRIGATÓRIO em produção
 CORS_ORIGINS=["http://localhost:5173", "https://app.storge.care"]
 ```
 
-### 3. Inicie os containers
+### 3. Ambiente dev
 
 ```bash
-docker-compose up -d
+docker compose --env-file .env.dev -p ocr-dev \
+  -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
-Os seguintes serviços serão iniciados:
+Serviços:
 - **API**: `http://localhost:8001`
-- **PostgreSQL**: `localhost:5433`
-- **Redis**: Container interno (sem porta exposta)
-- **Worker Celery**: Container interno
+- **PostgreSQL**: `127.0.0.1:15433`
+- **Redis**: interno na rede Docker
+- **Worker Celery**: interno na rede Docker
+- **Uploads**: bind mount em `./uploads`
 
-### 4. Execute as migrations do banco
+O serviço `migrate` aplica `alembic upgrade head` antes da API e do worker iniciarem.
+
+### 4. Ambiente test
 
 ```bash
-docker-compose exec api alembic upgrade head
+docker compose --env-file .env.test -p ocr-test \
+  -f docker-compose.test.yml run --rm test
 ```
 
-### 5. Verifique o status
+O ambiente de teste roda em container e usa credenciais falsas. A suíte atual usa SQLite dentro do container.
+
+### 5. Ambiente prod
+
+```bash
+docker compose --env-file .env.prod -p ocr-prod \
+  -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Em produção:
+- API é o único serviço exposto no host.
+- PostgreSQL e Redis não publicam portas.
+- `MASTER_API_KEY`, `GEMINI_API_KEY`, `DB_PASS`, `REDIS_PASS` e `CORS_ORIGINS` devem estar definidos.
+- Migrations rodam pelo serviço `migrate`, não implicitamente em API/worker.
+
+### 6. Verifique o status
 
 ```bash
 curl http://localhost:8001/health
@@ -279,11 +301,14 @@ sistema-ocr-exame/
 │   └── main.py                # Aplicação FastAPI
 ├── alembic/                   # Migrations
 ├── uploads/                   # Arquivos PDFs enviados
-├── tests/                     # Testes
-├── docker-compose.yml         # Orquestração Docker
-├── docker-compose.prod.yml    # Configuração produção
+├── app/tests/                 # Testes
+├── docker-compose.yml         # Base Docker compartilhada
+├── docker-compose.dev.yml     # Override desenvolvimento
+├── docker-compose.test.yml    # Runner de testes
+├── docker-compose.prod.yml    # Override produção
 ├── Dockerfile                 # Imagem da aplicação
 ├── requirements.txt           # Dependências Python
+├── requirements-test.txt      # Dependências adicionais para testes
 └── alembic.ini                # Configuração Alembic
 ```
 
@@ -292,19 +317,23 @@ sistema-ocr-exame/
 Para criar uma nova migration após alterar os modelos:
 
 ```bash
-docker-compose exec api alembic revision --autogenerate -m "descrição da alteração"
+docker compose --env-file .env.dev -p ocr-dev \
+  -f docker-compose.yml -f docker-compose.dev.yml exec api \
+  alembic revision --autogenerate -m "descrição da alteração"
 ```
 
 Para aplicar as migrations:
 
 ```bash
-docker-compose exec api alembic upgrade head
+docker compose --env-file .env.dev -p ocr-dev \
+  -f docker-compose.yml -f docker-compose.dev.yml run --rm migrate
 ```
 
 ## Executar Testes
 
 ```bash
-docker-compose exec api pytest -v
+docker compose --env-file .env.test -p ocr-test \
+  -f docker-compose.test.yml run --rm test
 ```
 
 ## Produção
@@ -312,7 +341,8 @@ docker-compose exec api pytest -v
 Para ambiente de produção, use o arquivo `docker-compose.prod.yml`:
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+docker compose --env-file .env.prod -p ocr-prod \
+  -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 ## Troubleshooting
@@ -321,31 +351,32 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```bash
 # Logs da API
-docker-compose logs -f api
+docker compose -p ocr-dev logs -f api
 
 # Logs do worker
-docker-compose logs -f worker
+docker compose -p ocr-dev logs -f worker
 
 # Logs do banco
-docker-compose logs -f db
+docker compose -p ocr-dev logs -f db
 ```
 
 ### Reiniciar serviços
 
 ```bash
-docker-compose restart api worker
+docker compose -p ocr-dev restart api worker
 ```
 
 ### Recriar containers (após alterações no Dockerfile)
 
 ```bash
-docker-compose up -d --build
+docker compose --env-file .env.dev -p ocr-dev \
+  -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
 ### Limpar tudo (cuidado: remove volumes)
 
 ```bash
-docker-compose down -v
+docker compose -p ocr-dev down -v
 ```
 
 ## Contribuindo
