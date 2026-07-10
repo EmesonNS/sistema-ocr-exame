@@ -13,5 +13,6 @@
 - **Done when:** Biomarcadores podem ser marcados como "Verificados" via API.
 
 ## T28: UI Prototype (Mockup)
-- [ ] Documentar especificações para o dashboard de auditoria (Frontend requirements).
-
+- [x] Documentar especificações para o dashboard de auditoria (Frontend requirements).
+- [x] Criar protótipo estático de referência em `docs/auditoria-dashboard-prototipo.html`.
+- [ ] Implementar o dashboard real no repo frontend do produto.

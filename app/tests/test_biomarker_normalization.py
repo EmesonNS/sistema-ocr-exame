@@ -398,6 +398,43 @@ class TestNormalizarResultadoBiomarcador:
 
         assert resultado["status_alerta"] == "baixo"
 
+    def test_decimal_com_ponto_deve_preservar_casas_decimais(self):
+        """Valores como 13.8 e 0.86 usam ponto decimal, não milhar."""
+        hemoglobina = normalizar_resultado_biomarcador(
+            nome_marcador="HEMOGLOBINA",
+            valor_raw="13.8",
+            unidade_raw="g/dL",
+            referencia_raw="12.0 a 16.0 g/dL",
+            contexto=None,
+        )
+        creatinina = normalizar_resultado_biomarcador(
+            nome_marcador="CREATININA",
+            valor_raw="0.86",
+            unidade_raw="mg/dL",
+            referencia_raw="0.6 a 1.2 mg/dL",
+            contexto=None,
+        )
+
+        assert hemoglobina["valor_numerico"] == Decimal("13.8000")
+        assert creatinina["valor_numerico"] == Decimal("0.8600")
+        assert hemoglobina["needs_review"] is False
+        assert creatinina["needs_review"] is False
+
+    def test_referencia_com_inteiros_sem_milhar_preserva_intervalo(self):
+        """Referências como 4000 a 11000 não devem virar 0 a 110."""
+        resultado = normalizar_resultado_biomarcador(
+            nome_marcador="LEUCOCITOS",
+            valor_raw="7200",
+            unidade_raw="/mm3",
+            referencia_raw="4000 a 11000 /mm3",
+            contexto=None,
+        )
+
+        assert resultado["valor_numerico"] == Decimal("7200.0000")
+        assert resultado["referencia_min"] == Decimal("4000.0000")
+        assert resultado["referencia_max"] == Decimal("11000.0000")
+        assert resultado["needs_review"] is False
+
     def test_nome_marcador_normalizado(self):
         """Nome do marcador é normalizado para uppercase."""
         resultado = normalizar_resultado_biomarcador(

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 from typing import List, Optional
 from datetime import datetime
@@ -31,10 +31,11 @@ class ApiKeyResponse(BaseModel):
         ..., description="API Key gerada (guarde-a, não será exibida novamente)"
     )
     rate_limit_per_minute: int
+    version: int
+    rotated_from_id: Optional[UUID] = None
+    rotated_at: Optional[datetime] = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ApiKeyInfo(BaseModel):
@@ -44,10 +45,11 @@ class ApiKeyInfo(BaseModel):
     client_name: str
     is_active: bool
     rate_limit_per_minute: int
+    version: int
+    rotated_from_id: Optional[UUID] = None
+    rotated_at: Optional[datetime] = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 def generate_api_key() -> str:
@@ -91,6 +93,7 @@ def create_api_key(
         client_name=data.client_name,
         rate_limit_per_minute=data.rate_limit_per_minute,
         is_active=True,
+        version=1,
     )
 
     db.add(api_key)
@@ -102,6 +105,9 @@ def create_api_key(
         client_name=api_key.client_name,
         api_key=raw_key,
         rate_limit_per_minute=api_key.rate_limit_per_minute,
+        version=api_key.version,
+        rotated_from_id=api_key.rotated_from_id,
+        rotated_at=api_key.rotated_at,
         created_at=api_key.created_at,
     )
 
@@ -125,10 +131,63 @@ def list_api_keys(db: Session = Depends(get_db), _: bool = Depends(require_maste
             client_name=k.client_name,
             is_active=k.is_active,
             rate_limit_per_minute=k.rate_limit_per_minute,
+            version=k.version,
+            rotated_from_id=k.rotated_from_id,
+            rotated_at=k.rotated_at,
             created_at=k.created_at,
         )
         for k in keys
     ]
+
+
+@router.post(
+    "/api-keys/{key_id}/rotate",
+    response_model=ApiKeyResponse,
+    summary="Rotacionar API Key",
+    description="Cria uma nova API Key para o mesmo cliente, desativa a anterior e incrementa a versão. Requer X-Master-Key header.",
+    responses={
+        200: {"description": "API Key rotacionada"},
+        401: {"description": "Chave mestra inválida"},
+        404: {"description": "API Key não encontrada"},
+        503: {"description": "Admin desabilitado"},
+    },
+)
+def rotate_api_key(
+    key_id: UUID, db: Session = Depends(get_db), _: bool = Depends(require_master_key)
+):
+    current_key = db.query(ApiKey).filter(ApiKey.id == key_id).first()
+    if not current_key:
+        raise HTTPException(status_code=404, detail="API Key não encontrada")
+
+    raw_key = generate_api_key()
+    key_hash = hash_api_key(raw_key)
+
+    current_key.is_active = False
+    current_key.rotated_at = datetime.utcnow()
+
+    rotated_key = ApiKey(
+        key_hash=key_hash,
+        client_name=current_key.client_name,
+        rate_limit_per_minute=current_key.rate_limit_per_minute,
+        is_active=True,
+        version=(current_key.version or 1) + 1,
+        rotated_from_id=current_key.id,
+    )
+
+    db.add(rotated_key)
+    db.commit()
+    db.refresh(rotated_key)
+
+    return ApiKeyResponse(
+        id=rotated_key.id,
+        client_name=rotated_key.client_name,
+        api_key=raw_key,
+        rate_limit_per_minute=rotated_key.rate_limit_per_minute,
+        version=rotated_key.version,
+        rotated_from_id=rotated_key.rotated_from_id,
+        rotated_at=rotated_key.rotated_at,
+        created_at=rotated_key.created_at,
+    )
 
 
 @router.delete(

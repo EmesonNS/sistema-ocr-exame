@@ -44,17 +44,41 @@ class ExameRepository:
         return None
 
     def create_exame(
-        self, db: Session, patient_id: int, user_id: int, file_path: str, webhook_url: Optional[str] = None, is_digitally_signed: bool = False, batch_id: Optional[uuid.UUID] = None
+        self,
+        db: Session,
+        patient_id: int,
+        user_id: int,
+        file_reference: str,
+        *,
+        original_filename: Optional[str] = None,
+        storage_provider: Optional[str] = None,
+        storage_bucket: Optional[str] = None,
+        storage_object_key: Optional[str] = None,
+        storage_content_type: Optional[str] = None,
+        storage_size_bytes: Optional[int] = None,
+        storage_checksum: Optional[str] = None,
+        storage_status: Optional[str] = None,
+        webhook_url: Optional[str] = None,
+        is_digitally_signed: bool = False,
+        batch_id: Optional[uuid.UUID] = None
     ) -> Exame:
         """Cria um novo exame."""
         db_exame = Exame(
             patient_id=patient_id,
             uploaded_by_user_id=user_id,
-            url_documento=file_path,
+            url_documento=file_reference,
+            original_filename=original_filename,
             status_processamento="pendente",
             webhook_url=webhook_url,
             is_digitally_signed=is_digitally_signed,
             batch_id=batch_id,
+            storage_provider=storage_provider,
+            storage_bucket=storage_bucket,
+            storage_object_key=storage_object_key,
+            storage_content_type=storage_content_type,
+            storage_size_bytes=storage_size_bytes,
+            storage_checksum=storage_checksum,
+            storage_status=storage_status,
         )
         db.add(db_exame)
         db.commit()
@@ -223,6 +247,25 @@ class ExameRepository:
                     )
             if laboratorio:
                 exame.laboratorio = laboratorio
+            db.commit()
+            db.refresh(exame)
+        return exame
+
+    def update_usage_metrics(
+        self,
+        db: Session,
+        exame_id: str,
+        total_tokens: Optional[int] = None,
+        agentic_zoom_tokens: Optional[int] = None,
+    ) -> Optional[Exame]:
+        """Atualiza métricas de uso de IA do exame."""
+        coerced_id = self._coerce_exame_id(exame_id) or exame_id
+        exame = db.query(Exame).filter(Exame.id == coerced_id).first()
+        if exame:
+            if total_tokens is not None:
+                exame.total_tokens = total_tokens
+            if agentic_zoom_tokens is not None:
+                exame.agentic_zoom_tokens = agentic_zoom_tokens
             db.commit()
             db.refresh(exame)
         return exame

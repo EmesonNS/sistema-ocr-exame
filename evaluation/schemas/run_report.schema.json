@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RunReport",
+  "type": "object",
+  "required": ["run_id", "created_at", "git_sha", "pipeline_mode", "app_base_url", "knowledge_version", "dataset_version", "corpus_source", "summary", "documents"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "created_at": { "type": "string" },
+    "git_sha": { "type": "string" },
+    "pipeline_mode": { "type": "string" },
+    "app_base_url": { "type": "string" },
+    "knowledge_version": { "type": "string" },
+    "dataset_version": { "type": ["string", "null"] },
+    "corpus_source": { "type": ["string", "null"] },
+    "summary": {
+      "type": "object",
+      "required": ["documents_total", "documents_passed", "documents_blocked"],
+      "properties": {
+        "documents_total": { "type": "integer" },
+        "documents_passed": { "type": "integer" },
+        "documents_blocked": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "documents": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    }
+  },
+  "additionalProperties": true
+}

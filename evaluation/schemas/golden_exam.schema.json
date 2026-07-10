@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GoldenExam",
+  "type": "object",
+  "required": ["document_id", "file_path", "document_type", "source_status", "expected_behavior", "expected_biomarkers"],
+  "properties": {
+    "document_id": { "type": "string" },
+    "file_path": { "type": "string" },
+    "document_type": { "type": "string" },
+    "source_status": { "type": "string" },
+    "expected_behavior": { "type": "string" },
+    "expected_biomarkers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "value_raw", "value_numeric", "unit", "reference_min", "reference_max", "expected_status"],
+        "properties": {
+          "name": { "type": "string" },
+          "value_raw": { "type": ["string", "null"] },
+          "value_numeric": { "type": ["number", "integer", "string", "null"] },
+          "unit": { "type": ["string", "null"] },
+          "reference_min": { "type": ["number", "integer", "string", "null"] },
+          "reference_max": { "type": ["number", "integer", "string", "null"] },
+          "expected_status": { "type": "string" },
+          "allows_tolerance": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -18,6 +18,9 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required in prod}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required in prod}
+      OCR_STORAGE_BACKEND: local
+      OCR_LOCAL_STORAGE_DIR: ${OCR_LOCAL_STORAGE_DIR:-/code/uploads}
+      OCR_RETENTION_DAYS: ${OCR_RETENTION_DAYS:-365}
     logging:
       driver: json-file
       options:
@@ -31,6 +34,9 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required in prod}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required in prod}
+      OCR_STORAGE_BACKEND: local
+      OCR_LOCAL_STORAGE_DIR: ${OCR_LOCAL_STORAGE_DIR:-/code/uploads}
+      OCR_RETENTION_DAYS: ${OCR_RETENTION_DAYS:-365}
     logging:
       driver: json-file
       options:

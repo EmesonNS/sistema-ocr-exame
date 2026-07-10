@@ -4,19 +4,26 @@ services:
       - "127.0.0.1:${DB_PORT_HOST:-5433}:5432"
 
   migrate:
+    user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - .:/code
       - ./uploads:/code/uploads
 
   api:
+    user: "${UID:-1000}:${GID:-1000}"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "127.0.0.1:${API_PORT:-8001}:8000"
     volumes:
       - .:/code
       - ./uploads:/code/uploads
+    environment:
+      OCR_RETENTION_DAYS: ${OCR_RETENTION_DAYS:-7}
 
   worker:
+    user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - .:/code
       - ./uploads:/code/uploads
+    environment:
+      OCR_RETENTION_DAYS: ${OCR_RETENTION_DAYS:-7}

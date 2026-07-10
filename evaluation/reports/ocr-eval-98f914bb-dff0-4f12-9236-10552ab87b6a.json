@@ -1,0 +1,58 @@
+{
+  "run_id": "98f914bb-dff0-4f12-9236-10552ab87b6a",
+  "created_at": "2026-07-08T14:19:12.285808+00:00",
+  "app_base_url": "http://127.0.0.1:18080/api",
+  "knowledge_version": "0.1.0",
+  "dataset_version": "1.0.0",
+  "corpus_source": "amostras_exames",
+  "clinic": {
+    "email": "ocr-eval.1783520225907344310@storge.local",
+    "cnpj": "12345678000110"
+  },
+  "summary": {
+    "documents_total": 1,
+    "documents_passed": 0,
+    "documents_blocked": 1
+  },
+  "documents": [
+    {
+      "document_id": "ana_caroline",
+      "file_path": "/mnt/storage/repos/storge/sistema-ocr-exame/amostras_exames/Ana Caroline.pdf",
+      "corpus_class": "derived_output_do_not_use_as_source",
+      "upload_status": 201,
+      "exam_id": "ac6f742f-d3dc-4f2b-a7c9-a04ab4250c8e",
+      "final_status": "erro",
+      "processing_stage": "failed",
+      "processing_percent": 0,
+      "processing_message": "Nenhum dado extraído do documento",
+      "download_status": null,
+      "pdf_bytes": null,
+      "result": "blocked",
+      "error": "terminal=erro: Nenhum dado extraído do documento"
+    }
+  ],
+  "steps": [
+    {
+      "name": "auth",
+      "role": "CLINIC",
+      "jwt_role": "CLINIC"
+    },
+    {
+      "name": "patient",
+      "patient_id": 9
+    },
+    {
+      "name": "upload",
+      "document_id": "ana_caroline",
+      "exam_id": "ac6f742f-d3dc-4f2b-a7c9-a04ab4250c8e",
+      "corpus_class": "derived_output_do_not_use_as_source"
+    },
+    {
+      "name": "terminal",
+      "document_id": "ana_caroline",
+      "status": "erro",
+      "stage": "failed",
+      "message": "Nenhum dado extraído do documento"
+    }
+  ]
+}

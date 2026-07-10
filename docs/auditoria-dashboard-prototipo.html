@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard de Auditoria - Protótipo</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111831;
+      --panel-2: #17213f;
+      --line: #2a355d;
+      --text: #e8ecff;
+      --muted: #9aa5d1;
+      --accent: #7dd3fc;
+      --accent-2: #a78bfa;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(125, 211, 252, 0.12), transparent 24%),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.10), transparent 28%),
+        var(--bg);
+      color: var(--text);
+    }
+    header {
+      padding: 32px 24px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    p { margin: 0; color: var(--muted); }
+    main {
+      display: grid;
+      grid-template-columns: 320px 1.2fr 0.8fr;
+      gap: 16px;
+      padding: 16px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent), var(--panel);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      overflow: hidden;
+      min-height: 300px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.28);
+    }
+    .card header {
+      padding: 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: transparent;
+    }
+    .card h2 { margin: 0; font-size: 16px; }
+    .card .body { padding: 14px; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .pill, .btn {
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+      font-size: 12px;
+    }
+    .btn {
+      cursor: pointer;
+      background: linear-gradient(180deg, rgba(125,211,252,0.18), rgba(125,211,252,0.08));
+    }
+    .btn.secondary { background: rgba(255,255,255,0.04); }
+    .table {
+      display: grid;
+      gap: 10px;
+    }
+    .row, .detail-row, .evidence-box {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--panel-2);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .row.active { outline: 2px solid rgba(125,211,252,0.35); }
+    .row h3, .detail-row h3, .evidence-box h3 { margin: 0 0 6px; font-size: 14px; }
+    .meta, .subtle { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin: 0 8px 8px 0;
+    }
+    .status.ok { background: rgba(52, 211, 153, 0.16); color: #b8f8dd; }
+    .status.warn { background: rgba(251, 191, 36, 0.18); color: #ffe59c; }
+    .status.bad { background: rgba(251, 113, 133, 0.16); color: #ffbcc9; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .biomarker {
+      display: grid;
+      grid-template-columns: 1.5fr 0.8fr 0.8fr 0.5fr;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-size: 12px;
+    }
+    .biomarker:last-child { border-bottom: 0; }
+    .evidence-viewport {
+      min-height: 300px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 1px, transparent 1px, transparent 18px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 1px, transparent 1px, transparent 18px);
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .crop {
+      position: absolute;
+      border: 2px solid rgba(125, 211, 252, 0.9);
+      background: rgba(125, 211, 252, 0.12);
+      box-shadow: 0 0 0 2000px rgba(11,16,32,0.20);
+    }
+    .footer-note {
+      padding: 0 16px 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    @media (max-width: 1100px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dashboard de Auditoria</h1>
+    <p>Protótipo estático para conferência humana de exames, evidências visuais e verificação de biomarcadores.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <header><h2>Exames</h2></header>
+      <div class="body">
+        <div class="toolbar">
+          <span class="pill">patientId: 42</span>
+          <span class="pill">status: concluido</span>
+          <span class="pill">revisão: pendente</span>
+        </div>
+        <div id="examList" class="table"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>Detalhe do exame</h2></header>
+      <div class="body" id="examDetail"></div>
+    </section>
+
+    <section class="card">
+      <header><h2>Evidência visual</h2></header>
+      <div class="body">
+        <div id="evidencePanel" class="evidence-viewport"></div>
+        <div id="fhirPanel" style="margin-top:12px"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="footer-note">
+    Este protótipo aponta para APIs já existentes no backend: listagem de exames, detalhes, status, resumo, evidência, FHIR e verificação humana.
+  </div>
+
+  <script>
+    const exams = [
+      {
+        id: 'exam-1',
+        patientId: 42,
+        originalFilename: 'hemograma-2026-02-10.pdf',
+        laboratorio: 'Lab Teste',
+        status: 'concluido',
+        processingStage: 'completed',
+        processingPercent: 100,
+        processingMessage: 'Processamento concluído - 15 biomarcadores extraídos',
+        reviewState: 'pending',
+        summary: 'Hemograma com leucocitose e hemoglobina dentro da faixa.',
+        biomarkers: [
+          {
+            id: 'bio-1',
+            name: 'HEMOGLOBINA',
+            value: '13.5',
+            unit: 'g/dL',
+            status: 'normal',
+            confidence: 0.98,
+            pageNumber: 1,
+            boundingBox: [244, 110, 282, 424],
+            reviewed: false
+          },
+          {
+            id: 'bio-2',
+            name: 'LEUCOCITOS',
+            value: '12.000',
+            unit: '/mm³',
+            status: 'alto',
+            confidence: 0.91,
+            pageNumber: 1,
+            boundingBox: [340, 108, 382, 458],
+            reviewed: true
+          }
+        ]
+      },
+      {
+        id: 'exam-2',
+        patientId: 42,
+        originalFilename: 'bioquimica-2026-02-12.pdf',
+        laboratorio: 'Sabin',
+        status: 'erro',
+        processingStage: 'failed',
+        processingPercent: 0,
+        processingMessage: 'Nenhum dado extraído do documento',
+        reviewState: 'pending',
+        summary: null,
+        biomarkers: []
+      }
+    ];
+
+    let selectedExam = exams[0];
+    let selectedBio = exams[0].biomarkers[0];
+
+    function statusClass(status) {
+      if (status === 'concluido' || status === 'normal') return 'ok';
+      if (status === 'erro' || status === 'alto') return 'bad';
+      return 'warn';
+    }
+
+    function renderExamList() {
+      const el = document.getElementById('examList');
+      el.innerHTML = exams.map(exam => `
+        <article class="row ${exam.id === selectedExam.id ? 'active' : ''}" data-exam="${exam.id}">
+          <h3>${exam.originalFilename}</h3>
+          <div class="meta">${exam.laboratorio} · paciente ${exam.patientId}</div>
+          <span class="status ${statusClass(exam.status)}">${exam.status}</span>
+          <span class="pill">${exam.processingStage}</span>
+          <div class="meta">Revisão: ${exam.reviewState}</div>
+        </article>
+      `).join('');
+
+      el.querySelectorAll('[data-exam]').forEach(node => {
+        node.onclick = () => {
+          selectedExam = exams.find(exam => exam.id === node.dataset.exam);
+          selectedBio = selectedExam.biomarkers[0] || null;
+          render();
+        };
+      });
+    }
+
+    function renderDetail() {
+      const el = document.getElementById('examDetail');
+      el.innerHTML = `
+        <div class="detail-row">
+          <h3>${selectedExam.originalFilename}</h3>
+          <div class="meta">${selectedExam.laboratorio} · paciente ${selectedExam.patientId}</div>
+          <div>
+            <span class="status ${statusClass(selectedExam.status)}">${selectedExam.status}</span>
+            <span class="pill">${selectedExam.processingStage}</span>
+          </div>
+          <div class="meta">${selectedExam.processingMessage}</div>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="detail-row">
+          <h3>Biomarcadores</h3>
+          ${selectedExam.biomarkers.length ? selectedExam.biomarkers.map(bio => `
+            <div class="biomarker">
+              <div><strong>${bio.name}</strong><div class="subtle">Confiança ${Math.round(bio.confidence * 100)}%</div></div>
+              <div>${bio.value}</div>
+              <div>${bio.unit}</div>
+              <div><button class="btn secondary" data-bio="${bio.id}">${bio.reviewed ? 'Verificado' : 'Verificar'}</button></div>
+            </div>
+          `).join('') : '<div class="meta">Nenhum biomarcador disponível.</div>'}
+        </div>
+      `;
+
+      el.querySelectorAll('[data-bio]').forEach(node => {
+        node.onclick = () => {
+          const bio = selectedExam.biomarkers.find(item => item.id === node.dataset.bio);
+          if (!bio) return;
+          bio.reviewed = true;
+          render();
+        };
+      });
+    }
+
+    function renderEvidence() {
+      const el = document.getElementById('evidencePanel');
+      const bio = selectedBio || selectedExam.biomarkers[0];
+      if (!bio) {
+        el.innerHTML = '<div class="meta">Nenhuma evidência disponível.</div>';
+        document.getElementById('fhirPanel').innerHTML = '';
+        return;
+      }
+
+      const box = bio.boundingBox || [260, 120, 360, 440];
+      const top = Math.max(5, box[0] / 10);
+      const left = Math.max(5, box[1] / 10);
+      const width = Math.max(30, (box[3] - box[1]) / 10);
+      const height = Math.max(20, (box[2] - box[0]) / 10);
+
+      el.innerHTML = `
+        <div class="crop" style="top:${top}%; left:${left}%; width:${width}%; height:${height}%"></div>
+        <div style="position:relative; z-index:1; text-align:center;">
+          <div class="status ${statusClass(bio.status)}">${bio.name}</div>
+          <div class="meta">Página ${bio.pageNumber} · bounding_box [${bio.boundingBox.join(', ')}]</div>
+          <div style="margin-top:8px" class="subtle">Endpoint: /api/v1/exames/{exameId}/resultados/{resultadoId}/evidence</div>
+        </div>
+      `;
+
+      document.getElementById('fhirPanel').innerHTML = `
+        <div class="detail-row">
+          <h3>FHIR</h3>
+          <div class="meta">Bundle com DiagnosticReport + Observations</div>
+          <div class="toolbar" style="margin-top:10px">
+            <span class="pill">/api/v1/exames/{exameId}/fhir</span>
+            <span class="pill">${selectedExam.biomarkers.length} observações</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      renderExamList();
+      renderDetail();
+      renderEvidence();
+    }
+
+    render();
+  </script>
+</body>
+</html>

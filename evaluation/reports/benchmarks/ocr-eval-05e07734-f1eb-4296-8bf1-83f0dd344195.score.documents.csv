@@ -1,0 +1,2 @@
+corpus_class,document_id,document_type_misclassified,expected_behavior,expected_biomarkers,matched_biomarkers,missing_biomarkers,observed_biomarkers,result,unexpected_biomarkers,unsafe_normal
+golden_candidate_raw_lab,laudo_completo_2026_02_04,True,extract_biomarkers,16,0,16,0,blocked,0,0

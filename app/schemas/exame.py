@@ -16,6 +16,8 @@ class ExameResponse(BaseModel):
         description="Status: pendente | processando | concluido | erro"
     )
     url_documento: str = Field(description="Caminho do arquivo PDF")
+    original_filename: Optional[str] = Field(None, description="Nome original do PDF enviado")
+    storage_status: Optional[str] = Field(None, description="Status da persistência do arquivo")
     webhook_url: Optional[str] = Field(None, description="URL para notificação de conclusão")
     is_digitally_signed: bool = Field(False, description="Indica se o PDF possui assinatura digital")
 
@@ -49,7 +51,9 @@ class ExameResponse(BaseModel):
                 "data_coleta": "2026-02-10",
                 "laboratorio": "Laboratório São Paulo",
                 "status_processamento": "concluido",
-                "url_documento": "uploads/abc123.pdf",
+                "url_documento": "s3://ocr-exams/patients/42/abc123.pdf",
+                "original_filename": "hemograma-2026-02-10.pdf",
+                "storage_status": "stored",
                 "processing_stage": "completed",
                 "processing_percent": 100,
                 "processing_message": "Processamento concluído - 15 biomarcadores extraídos",
@@ -158,6 +162,9 @@ class DetalheExameResponse(BaseModel):
     data_coleta: Optional[date] = Field(None, description="Data da coleta")
     laboratorio: Optional[str] = Field(None, description="Laboratório")
     status_processamento: str = Field(description="Status do processamento OCR")
+    url_documento: Optional[str] = Field(None, description="Referência canônica do arquivo persistido")
+    original_filename: Optional[str] = Field(None, description="Nome original do PDF enviado")
+    storage_status: Optional[str] = Field(None, description="Status da persistência do arquivo")
     resultados: List[ResultadoBiomarcadorResponse] = Field(
         description="Biomarcadores extraídos"
     )
@@ -344,4 +351,3 @@ class BatchResponse(BaseModel):
     exames: List[ExameResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
-

@@ -9,21 +9,35 @@ Microserviço responsável por processar exames laboratoriais via OCR (Inteligê
 - **Processamento Assíncrono**: Usa Celery + Redis para processamento em background
 - **API REST**: Interface RESTful com autenticação via API Keys
 - **Polling de Status**: Acompanhamento do status de processamento em tempo real
-- **Gerenciamento de API Keys**: Sistema completo de criação e revogação de chaves de acesso
+- **Gerenciamento de API Keys**: Criação, listagem, rotação, revogação e reativação de chaves de acesso
+- **Storage agnóstico**: Suporte a backend local ou S3-compatible/MinIO para arquivos de exame
+
+## Estado Atual
+
+O estado atual detalhado do OCR no contexto do produto Storge esta documentado em `.specs/project/OCR_CURRENT_STATE.md`. Esse retrato cobre a API OCR, worker, storage, eval, integracao com `storge-service`, fluxo de frontend, evidencias de validacao e leitura quantitativa de qualidade.
+
+Resumo operacional atual:
+
+- OCR privado com FastAPI, Celery, Redis, PostgreSQL, API keys e readiness real.
+- Upload de PDF, polling de status, resultados estruturados, resumo clinico, evidencia visual, FHIR e verificacao humana no contrato interno do OCR.
+- Storage local ou S3-compatible/MinIO para o arquivo original do exame.
+- Integracao pelo backend Spring Boot do produto, mantendo o OCR fora da superficie publica.
+- Frontend React com upload PDF, polling real, historico e resultado resumido; auditoria visual, LOINC, FHIR e verificacao humana existem no OCR/backend, mas nao estao todos expostos na UI atual.
+- Harness integrado em `storge-app/scripts/integrated-gate.sh` e eval quantitativo em `evaluation/`.
+- Qualidade clinica de release nao deve ser inferida pelo sucesso de runtime; leia os relatórios versionados em `evaluation/reports/`.
 
 ## Arquitetura
 
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────┐
-│   Cliente   │─────▶│  FastAPI     │─────▶│ PostgreSQL  │
-│             │◀─────│   (API)      │◀─────│   (Dados)   │
-└─────────────┘      └──────────────┘      └─────────────┘
-                           │
-                           ▼
-                    ┌──────────────┐      ┌─────────────┐
-                    │    Celery    │─────▶│    Redis    │
-                    │   (Worker)   │◀─────│   (Broker)  │
-                    └──────────────┘      └─────────────┘
+┌─────────────┐      ┌────────────────┐      ┌──────────────┐
+│ Cliente/UI  │─────▶│ storge-service │─────▶│ FastAPI OCR  │
+└─────────────┘      │  Backend API   │      └──────────────┘
+                     └────────────────┘              │
+                                                     ▼
+                    ┌──────────────┐      ┌──────────────────┐
+                    │    Celery    │◀────▶│ Redis/PostgreSQL │
+                    │   Worker     │      │ Storage local/S3 │
+                    └──────────────┘      └──────────────────┘
                            │
                            ▼
                     ┌──────────────┐
@@ -31,6 +45,8 @@ Microserviço responsável por processar exames laboratoriais via OCR (Inteligê
                     │  /OpenRouter │
                     └──────────────┘
 ```
+
+Em desenvolvimento isolado, um cliente pode chamar a FastAPI diretamente para testar o microservico. No produto Storge, a superficie publica deve passar pelo backend `storge-service`.
 
 ## Tecnologias Utilizadas
 
@@ -43,6 +59,7 @@ Microserviço responsável por processar exames laboratoriais via OCR (Inteligê
 - **Alembic**: Gerenciamento de migrations do banco
 - **Google Gemini**: API primária para OCR
 - **OpenRouter**: API de fallback para OCR
+- **MinIO/S3-compatible**: backend opcional para storage de exames
 - **Docker & Docker Compose**: Orquestração de containers
 
 ## Pré-requisitos
@@ -51,6 +68,17 @@ Microserviço responsável por processar exames laboratoriais via OCR (Inteligê
 - Docker Compose 2.0+
 - API Keys do Google Gemini ([obter aqui](https://aistudio.google.com/app/apikey))
 - (Opcional) API Key do OpenRouter ([obter aqui](https://openrouter.ai/))
+
+Antes de subir o ambiente, confirme que o cliente consegue falar com o daemon Docker:
+
+```bash
+docker info
+docker compose version
+```
+
+Se `docker info` falhar com `Cannot connect to the Docker daemon` ou erro em
+`/var/run/docker.sock`, o problema ainda e de ambiente local: inicie o Docker
+Engine/Docker Desktop antes de rodar os comandos do projeto.
 
 ## Instalação e Configuração
 
@@ -92,12 +120,22 @@ MASTER_API_KEY=sua_chave_mestra_segura_aqui  # OBRIGATÓRIO em produção
 CORS_ORIGINS=["http://localhost:5173", "https://app.storge.care"]
 ```
 
-### 3. Ambiente dev
+### 3. Ambiente dev integrado com `storge-app`
 
 ```bash
-docker compose --env-file .env.dev -p ocr-dev \
+docker compose --env-file .env.dev \
   -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
+
+Use o nome padrao do projeto (`sistema-ocr-exame`) no ambiente dev integrado. A
+app principal espera a rede Docker criada como `sistema-ocr-exame_ocr_network`.
+Evite `-p ocr-dev` quando for rodar OCR junto com `storge-app`, porque isso muda
+o nome da rede para `ocr-dev_ocr_network`.
+
+Para desenvolvimento isolado do OCR, um nome de projeto customizado e aceitavel
+desde que nenhum `storge-app` precise consumir a rede desse compose. O smoke
+isolado `F-001`, por exemplo, usa projeto proprio (`ocr-f001`) de forma
+intencional.
 
 Serviços:
 - **API**: `http://localhost:8001`
@@ -129,6 +167,7 @@ Em produção:
 - PostgreSQL e Redis não publicam portas.
 - `MASTER_API_KEY`, `GEMINI_API_KEY`, `DB_PASS`, `REDIS_PASS` e `CORS_ORIGINS` devem estar definidos.
 - Migrations rodam pelo serviço `migrate`, não implicitamente em API/worker.
+- A API OCR so deve ficar acessivel por rede privada, firewall ou reverse proxy restrito ao backend do produto. O compose publica `API_PORT`; essa publicacao nao e, sozinha, garantia de privacidade.
 
 ### 6. Verifique o status
 
@@ -138,6 +177,31 @@ curl http://localhost:8001/health
 
 Deve retornar: `{"status":"ok","version":"1.0.0"}`
 
+Para o readiness operacional real do pipeline:
+
+```bash
+curl http://localhost:8001/ready
+```
+
+Esse endpoint retorna `503` quando banco, Redis, worker ou segredos obrigatórios nao estao prontos.
+
+### Smoke baseline F-001
+
+O caminho reproduzível de smoke do OCR isolado fica em:
+
+```bash
+./scripts/smoke_runtime_ocr.sh
+```
+
+O script:
+- sobe `db`, `redis`, `migrate`, `api` e `worker` com o compose base;
+- copia a fixture controlada `fixtures/f-001-baseline-runtime-ocr.pdf` para o container `api`;
+- cria uma API key via `X-Master-Key` se `OCR_SMOKE_API_KEY` não for informada;
+- faz upload, polling de status e valida que o exame concluiu com resultados persistidos;
+- aceita `OCR_SMOKE_STOP_ON_EXIT=1` para derrubar o stack ao final;
+- usa `/ready` como preflight real do runtime antes de executar o fluxo;
+- usa `docker compose -p ocr-f001 -f docker-compose.yml down --remove-orphans` como teardown manual.
+
 ## Documentação da API
 
 A documentação interativa (Swagger) está disponível em:
@@ -146,20 +210,33 @@ A documentação interativa (Swagger) está disponível em:
 
 ### Autenticação
 
-Todos os endpoints (exceto `/health`) exigem uma **API Key** no header:
+Endpoints de negócio exigem uma **API Key** no header:
 
 ```
 X-API-Key: sua-chave-aqui
 ```
+
+Endpoints operacionais:
+- `/health`: publico no código atual; confirma apenas que a API HTTP responde.
+- `/ready`: publico no código atual; valida segredos obrigatorios, banco, Redis e worker, mas nao valida qualidade OCR nem chamada real aos provedores de IA.
+
+Endpoints administrativos de API keys usam `X-Master-Key`.
 
 ### Endpoints Principais
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | POST | `/api/v1/patients/{patient_id}/exames/upload` | Upload de PDF de exame |
+| POST | `/api/v1/patients/{patient_id}/exames/batch` | Upload em lote de PDFs |
 | GET | `/api/v1/patients/{patient_id}/exames` | Listar exames do paciente |
 | GET | `/api/v1/exames/{exame_id}` | Detalhes do exame com biomarcadores |
+| GET | `/api/v1/exames/{exame_id}/file` | Download do arquivo original |
 | GET | `/api/v1/exames/{exame_id}/status` | Status do processamento |
+| GET | `/api/v1/exames/{exame_id}/resumo` | Resumo clinico cached/best-effort |
+| POST | `/api/v1/exames/{exame_id}/resumo/regenerate` | Regenerar resumo clinico |
+| GET | `/api/v1/exames/{exame_id}/fhir` | Exportar Bundle FHIR |
+| GET | `/api/v1/exames/{exame_id}/resultados/{resultado_id}/evidence` | Recuperar evidencia visual |
+| POST | `/api/v1/exames/{exame_id}/resultados/{resultado_id}/verify` | Marcar resultado como verificado |
 
 ### Gerenciamento de API Keys
 
@@ -169,8 +246,13 @@ X-API-Key: sua-chave-aqui
 |--------|----------|-----------|------|
 | POST | `/api/v1/api-keys` | Criar nova API Key | X-Master-Key |
 | GET | `/api/v1/api-keys` | Listar todas as API Keys | X-Master-Key |
+| POST | `/api/v1/api-keys/{id}/rotate` | Rotacionar uma API Key | X-Master-Key |
 | DELETE | `/api/v1/api-keys/{id}` | Revogar uma API Key | X-Master-Key |
 | POST | `/api/v1/api-keys/{id}/activate` | Reativar uma API Key | X-Master-Key |
+
+`rate_limit_per_minute` e persistido no cadastro da chave. Nao trate esse campo
+como enforcement runtime local a menos que exista uma camada externa ou middleware
+explicitamente configurado para aplica-lo.
 
 **Exemplo de criação de API Key:**
 
@@ -178,7 +260,7 @@ X-API-Key: sua-chave-aqui
 curl -X POST http://localhost:8001/api/v1/api-keys \
   -H "X-Master-Key: sua-chave-mestra" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Minha Chave", "rate_limit": 60}'
+  -d '{"client_name": "storge-dev", "rate_limit_per_minute": 60}'
 ```
 
 > **Segurança**: Os endpoints de API Keys são protegidos por `X-Master-Key`. Configure uma chave segura em `MASTER_API_KEY` e mantenha-a segura. Em produção, considere também restringir via firewall.
@@ -219,8 +301,8 @@ O sistema **NÃO** converte automaticamente percentuais para absolutos para evit
 ### Auditoria e Correção de Valores
 
 O sistema detecta automaticamente valores potencialmente incorretos (ex: decimal deslocado) e:
-- Aplica correções quando há alta confiança (>90%)
-- Marca como `needs_review: true` quando a correção é incerta
+- Aplica heuristicas deterministicas de correção quando encontra um padrão compatível
+- Marca como `needs_review: true` quando a correção ou a confiança exige revisão humana
 - Registra auditoria completa: valor original, valor corrigido, regra aplicada, confiança
 
 Campos de auditoria em cada resultado:
@@ -317,7 +399,7 @@ sistema-ocr-exame/
 Para criar uma nova migration após alterar os modelos:
 
 ```bash
-docker compose --env-file .env.dev -p ocr-dev \
+docker compose --env-file .env.dev \
   -f docker-compose.yml -f docker-compose.dev.yml exec api \
   alembic revision --autogenerate -m "descrição da alteração"
 ```
@@ -325,7 +407,7 @@ docker compose --env-file .env.dev -p ocr-dev \
 Para aplicar as migrations:
 
 ```bash
-docker compose --env-file .env.dev -p ocr-dev \
+docker compose --env-file .env.dev \
   -f docker-compose.yml -f docker-compose.dev.yml run --rm migrate
 ```
 
@@ -351,32 +433,32 @@ docker compose --env-file .env.prod -p ocr-prod \
 
 ```bash
 # Logs da API
-docker compose -p ocr-dev logs -f api
+docker compose logs -f api
 
 # Logs do worker
-docker compose -p ocr-dev logs -f worker
+docker compose logs -f worker
 
 # Logs do banco
-docker compose -p ocr-dev logs -f db
+docker compose logs -f db
 ```
 
 ### Reiniciar serviços
 
 ```bash
-docker compose -p ocr-dev restart api worker
+docker compose restart api worker
 ```
 
 ### Recriar containers (após alterações no Dockerfile)
 
 ```bash
-docker compose --env-file .env.dev -p ocr-dev \
+docker compose --env-file .env.dev \
   -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
 ### Limpar tudo (cuidado: remove volumes)
 
 ```bash
-docker compose -p ocr-dev down -v
+docker compose down -v
 ```
 
 ## Contribuindo

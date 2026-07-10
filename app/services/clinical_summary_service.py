@@ -17,6 +17,7 @@ from typing import Any
 from uuid import UUID
 
 from google import genai
+from openai import AsyncOpenAI
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
@@ -80,6 +81,13 @@ class ClinicalSummaryService:
         if settings.GEMINI_API_KEY:
             self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         self.model = "gemini-2.0-flash"
+        self.openrouter_client = None
+        self.openrouter_model = "google/gemini-2.5-flash"
+        if settings.OPENROUTER_API_KEY:
+            self.openrouter_client = AsyncOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=settings.OPENROUTER_API_KEY,
+            )
 
     def _format_biomarkers(self, biomarcadores: list[dict]) -> str:
         """
@@ -180,8 +188,8 @@ class ClinicalSummaryService:
         Returns:
             Dict com resumo clínico ou None se falhar
         """
-        if not self.client:
-            logger.error("GEMINI_API_KEY não configurada - resumo clínico indisponível")
+        if not self.client and not self.openrouter_client:
+            logger.error("Nenhum provedor de IA configurado - resumo clínico indisponível")
             return None
 
         # Early exit: sem biomarcadores
@@ -207,19 +215,37 @@ class ClinicalSummaryService:
         try:
             # Formatar biomarcadores para prompt
             biomarcadores_text = self._format_biomarkers(biomarcadores)
-            prompt = PROMPT_CLINICAL_SUMMARY.format(
-                biomarcadores_formatados=biomarcadores_text
+            prompt = PROMPT_CLINICAL_SUMMARY.replace(
+                "{biomarcadores_formatados}", biomarcadores_text
             )
 
-            # Chamar IA (Async SDK)
-            logger.info(f"Gerando resumo clínico para exame {exame_id} (Async)")
-            response = await self.client.aio.models.generate_content(
-                model=self.model,
-                contents=[prompt],
-            )
+            text = None
+            if self.client:
+                try:
+                    logger.info(f"Gerando resumo clínico para exame {exame_id} via Gemini")
+                    response = await self.client.aio.models.generate_content(
+                        model=self.model,
+                        contents=[prompt],
+                    )
+                    text = response.text
+                except Exception as e:
+                    logger.warning(
+                        f"Gemini falhou ao gerar resumo clínico para exame {exame_id}: {e}"
+                    )
+
+            if not text and self.openrouter_client:
+                logger.info(f"Gerando resumo clínico para exame {exame_id} via OpenRouter")
+                response = await asyncio.wait_for(
+                    self.openrouter_client.chat.completions.create(
+                        model=self.openrouter_model,
+                        messages=[{"role": "user", "content": prompt}],
+                    ),
+                    timeout=settings.AI_PROVIDER_TIMEOUT_SECONDS,
+                )
+                text = response.choices[0].message.content
 
             # Parse da resposta
-            summary = self._parse_response(response.text)
+            summary = self._parse_response(text)
             if not summary:
                 logger.error(f"Falha ao parsear resposta para exame {exame_id}")
                 return None
@@ -271,8 +297,8 @@ class ClinicalSummaryService:
         Returns:
             Dict com novo resumo clínico ou None se falhar
         """
-        if not self.client:
-            logger.error("GEMINI_API_KEY não configurada - resumo clínico indisponível")
+        if not self.client and not self.openrouter_client:
+            logger.error("Nenhum provedor de IA configurado - resumo clínico indisponível")
             return None
 
         logger.info(f"Regenerando resumo clínico para exame {exame_id}")

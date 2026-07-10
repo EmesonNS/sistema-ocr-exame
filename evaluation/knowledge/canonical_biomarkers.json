@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0",
+  "canonical_biomarkers": [
+    {
+      "name": "HEMOGLOBINA",
+      "aliases": ["HB", "HGB", "HEMOGLOBINA", "HEMOGLOBINA TOTAL"],
+      "category": "hematologia"
+    },
+    {
+      "name": "GLICOSE",
+      "aliases": ["GLICOSE", "GLICEMIA"],
+      "category": "metabolismo"
+    },
+    {
+      "name": "LEUCOCITOS",
+      "aliases": ["LEUCOCITOS", "LEUCÓCITOS", "LEUCOCYTES"],
+      "category": "hematologia"
+    },
+    {
+      "name": "PLAQUETAS",
+      "aliases": ["PLAQUETAS", "PLAQ"],
+      "category": "hematologia"
+    },
+    {
+      "name": "CREATININA",
+      "aliases": ["CREATININA", "CREA"],
+      "category": "função renal"
+    }
+  ]
+}

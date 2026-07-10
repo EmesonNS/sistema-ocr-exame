@@ -53,15 +53,26 @@ class Exame(Base):
     __tablename__ = "exames"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     patient_id = Column(BigInteger, nullable=False, index=True)
     uploaded_by_user_id = Column(BigInteger, nullable=False)
     data_coleta = Column(Date)
     laboratorio = Column(String)
     url_documento = Column(String)
+    original_filename = Column(String, nullable=True)
     status_processamento = Column(String, default="pendente")
     webhook_url = Column(String, nullable=True)
     is_digitally_signed = Column(Boolean, default=False)
     batch_id = Column(GUID(), ForeignKey("exame_batches.id"), nullable=True)
+    storage_provider = Column(String(20), nullable=True)
+    storage_bucket = Column(String(255), nullable=True)
+    storage_object_key = Column(String(1024), nullable=True)
+    storage_content_type = Column(String(255), nullable=True)
+    storage_size_bytes = Column(BigInteger, nullable=True)
+    storage_checksum = Column(String(128), nullable=True)
+    storage_status = Column(String(20), nullable=True)
+    total_tokens = Column(Integer, nullable=True)
+    agentic_zoom_tokens = Column(Integer, nullable=True)
 
     # Progress tracking fields
     processing_stage = Column(String(50), nullable=True)

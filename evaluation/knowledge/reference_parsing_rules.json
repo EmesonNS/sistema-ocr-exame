@@ -1,0 +1,22 @@
+{
+  "version": "0.1.0",
+  "patterns": [
+    {
+      "name": "intervalo",
+      "shape": "min a max",
+      "examples": ["1.440 a 9.000/mm³", "0,0 a 5,0%"]
+    },
+    {
+      "name": "maximo_absoluto",
+      "shape": "< valor",
+      "examples": ["< 190 mg/dL"]
+    },
+    {
+      "name": "minimo_absoluto",
+      "shape": "> valor",
+      "examples": ["> 13 g/dL"]
+    }
+  ],
+  "locale_defaults": ["pt_BR", "en_US"],
+  "notes": "Regras conservadoras; qualquer excecao deve ser versionada explicitamente."
+}

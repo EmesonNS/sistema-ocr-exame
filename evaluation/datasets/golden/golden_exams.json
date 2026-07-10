@@ -1,0 +1,333 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-07-08T00:00:00Z",
+  "source": "amostras_exames",
+  "documents": [
+    {
+      "document_id": "laudo_completo_2026_02_04",
+      "file_path": "amostras_exames/Laudo Completo 04_02_2026 (1).pdf",
+      "document_type": "lab_report",
+      "source_status": "real",
+      "expected_behavior": "extract_biomarkers",
+      "expected_biomarkers": [
+        {
+          "name": "ERITRÓCITOS",
+          "value_raw": "5,22 10^6/µL",
+          "value_numeric": 5.22,
+          "unit": "10^6/µL",
+          "reference_min": 4.5,
+          "reference_max": 5.5,
+          "expected_status": "normal"
+        },
+        {
+          "name": "HEMOGLOBINA",
+          "value_raw": "16,0 g/dL",
+          "value_numeric": 16.0,
+          "unit": "g/dL",
+          "reference_min": 13.0,
+          "reference_max": 17.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "HEMATÓCRITO",
+          "value_raw": "46,3 %",
+          "value_numeric": 46.3,
+          "unit": "%",
+          "reference_min": 40.0,
+          "reference_max": 50.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "VCM",
+          "value_raw": "88,7 fL",
+          "value_numeric": 88.7,
+          "unit": "fL",
+          "reference_min": 83.0,
+          "reference_max": 101.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "HCM",
+          "value_raw": "30,7 pg",
+          "value_numeric": 30.7,
+          "unit": "pg",
+          "reference_min": 27.0,
+          "reference_max": 32.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "CHCM",
+          "value_raw": "34,6 g/dL",
+          "value_numeric": 34.6,
+          "unit": "g/dL",
+          "reference_min": 31.0,
+          "reference_max": 35.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "RDW",
+          "value_raw": "12,5 %",
+          "value_numeric": 12.5,
+          "unit": "%",
+          "reference_min": 11.6,
+          "reference_max": 14.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "LEUCÓCITOS",
+          "value_raw": "4.830 /µL",
+          "value_numeric": 4830,
+          "unit": "/µL",
+          "reference_min": 4000,
+          "reference_max": 10000,
+          "expected_status": "normal"
+        },
+        {
+          "name": "NEUTRÓFILOS",
+          "value_raw": "58,2 %",
+          "value_numeric": 58.2,
+          "unit": "%",
+          "reference_min": 40.0,
+          "reference_max": 80.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "EOSINÓFILOS",
+          "value_raw": "1,9 %",
+          "value_numeric": 1.9,
+          "unit": "%",
+          "reference_min": 1.0,
+          "reference_max": 6.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "BASÓFILOS",
+          "value_raw": "0,5 %",
+          "value_numeric": 0.5,
+          "unit": "%",
+          "reference_min": 0.0,
+          "reference_max": 2.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "LINFÓCITOS",
+          "value_raw": "34,3 %",
+          "value_numeric": 34.3,
+          "unit": "%",
+          "reference_min": 20.0,
+          "reference_max": 40.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "MONÓCITOS",
+          "value_raw": "5,1 %",
+          "value_numeric": 5.1,
+          "unit": "%",
+          "reference_min": 2.0,
+          "reference_max": 10.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "PLAQUETAS",
+          "value_raw": "148.000 /µL",
+          "value_numeric": 148000,
+          "unit": "/µL",
+          "reference_min": 150000,
+          "reference_max": 450000,
+          "expected_status": "baixo"
+        },
+        {
+          "name": "VPM",
+          "value_raw": "12,7 fL",
+          "value_numeric": 12.7,
+          "unit": "fL",
+          "reference_min": 8.3,
+          "reference_max": 12.5,
+          "expected_status": "alto"
+        },
+        {
+          "name": "FERRO",
+          "value_raw": "153 µg/dL",
+          "value_numeric": 153,
+          "unit": "µg/dL",
+          "reference_min": 65,
+          "reference_max": 175,
+          "expected_status": "normal"
+        }
+      ],
+      "review_notes": "Baseline inicial anotado manualmente a partir do texto extraido do PDF bruto."
+    },
+    {
+      "document_id": "laudosabin_ana_rodrigues_2025_05_13",
+      "file_path": "amostras_exames/LaudoSabin-AnaRodrigues-13-05-25.pdf",
+      "document_type": "lab_report",
+      "source_status": "real",
+      "expected_behavior": "extract_biomarkers",
+      "expected_biomarkers": [
+        {
+          "name": "HEMÁCIAS",
+          "value_raw": "4,54 milhões/mm3",
+          "value_numeric": 4.54,
+          "unit": "milhões/mm3",
+          "reference_min": 4.0,
+          "reference_max": 5.4,
+          "expected_status": "normal"
+        },
+        {
+          "name": "HEMOGLOBINA",
+          "value_raw": "14,4 g/dL",
+          "value_numeric": 14.4,
+          "unit": "g/dL",
+          "reference_min": 12.0,
+          "reference_max": 15.8,
+          "expected_status": "normal"
+        },
+        {
+          "name": "HEMATÓCRITO",
+          "value_raw": "42,5 %",
+          "value_numeric": 42.5,
+          "unit": "%",
+          "reference_min": 33.0,
+          "reference_max": 47.8,
+          "expected_status": "normal"
+        },
+        {
+          "name": "VCM",
+          "value_raw": "93,7 fl",
+          "value_numeric": 93.7,
+          "unit": "fl",
+          "reference_min": 80.0,
+          "reference_max": 98.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "HCM",
+          "value_raw": "31,7 pg",
+          "value_numeric": 31.7,
+          "unit": "pg",
+          "reference_min": 26.2,
+          "reference_max": 32.6,
+          "expected_status": "normal"
+        },
+        {
+          "name": "CHCM",
+          "value_raw": "33,9 g/dL",
+          "value_numeric": 33.9,
+          "unit": "g/dL",
+          "reference_min": 30.0,
+          "reference_max": 36.5,
+          "expected_status": "normal"
+        },
+        {
+          "name": "RDW",
+          "value_raw": "12,6 %",
+          "value_numeric": 12.6,
+          "unit": "%",
+          "reference_min": 11.0,
+          "reference_max": 16.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "LEUCÓCITOS",
+          "value_raw": "5.670",
+          "value_numeric": 5670,
+          "unit": "/mm3",
+          "reference_min": 3600,
+          "reference_max": 11000,
+          "expected_status": "normal"
+        },
+        {
+          "name": "BASTONETES",
+          "value_raw": "0",
+          "value_numeric": 0,
+          "unit": "%",
+          "reference_min": 0,
+          "reference_max": 5,
+          "expected_status": "normal"
+        },
+        {
+          "name": "SEGMENTADOS",
+          "value_raw": "63 3.572",
+          "value_numeric": 63,
+          "unit": "%",
+          "reference_min": 40.0,
+          "reference_max": 70.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "EOSINÓFILOS",
+          "value_raw": "5 284",
+          "value_numeric": 5,
+          "unit": "%",
+          "reference_min": 0,
+          "reference_max": 7,
+          "expected_status": "normal"
+        },
+        {
+          "name": "BASÓFILOS",
+          "value_raw": "1 57",
+          "value_numeric": 1,
+          "unit": "%",
+          "reference_min": 0,
+          "reference_max": 2,
+          "expected_status": "normal"
+        },
+        {
+          "name": "LINFÓCITOS",
+          "value_raw": "22 1.247",
+          "value_numeric": 22,
+          "unit": "%",
+          "reference_min": 20.0,
+          "reference_max": 50.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "MONÓCITOS",
+          "value_raw": "9 510",
+          "value_numeric": 9,
+          "unit": "%",
+          "reference_min": 3.0,
+          "reference_max": 14.0,
+          "expected_status": "normal"
+        },
+        {
+          "name": "PLAQUETAS",
+          "value_raw": "217 x 10³/mm3",
+          "value_numeric": 217,
+          "unit": "x 10³/mm3",
+          "reference_min": 130,
+          "reference_max": 450,
+          "expected_status": "normal"
+        },
+        {
+          "name": "VMP",
+          "value_raw": "11,6fl",
+          "value_numeric": 11.6,
+          "unit": "fl",
+          "reference_min": 6.8,
+          "reference_max": 12.6,
+          "expected_status": "normal"
+        },
+        {
+          "name": "FERRO SÉRICO",
+          "value_raw": "102 µg/dL",
+          "value_numeric": 102,
+          "unit": "µg/dL",
+          "reference_min": 60,
+          "reference_max": 180,
+          "expected_status": "normal"
+        },
+        {
+          "name": "FERRITINA SÉRICA",
+          "value_raw": "231 ng/mL",
+          "value_numeric": 231,
+          "unit": "ng/mL",
+          "reference_min": 13.0,
+          "reference_max": 150.0,
+          "expected_status": "alto"
+        }
+      ],
+      "review_notes": "Baseline inicial anotado manualmente a partir do texto extraido do PDF bruto."
+    }
+  ]
+}

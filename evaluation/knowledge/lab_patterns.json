@@ -1,0 +1,21 @@
+{
+  "version": "0.1.0",
+  "patterns": [
+    {
+      "laboratory": "DASA",
+      "hints": ["dasa", "laboratorio dasa"],
+      "document_class": "golden_candidate_raw_lab"
+    },
+    {
+      "laboratory": "Sabin",
+      "hints": ["sabin", "laboratório sabin"],
+      "document_class": "golden_candidate_raw_lab"
+    },
+    {
+      "laboratory": "generic",
+      "hints": [],
+      "document_class": "shadow_document"
+    }
+  ],
+  "notes": "Seeds mínimos para o scorer evoluir sem hardcode disperso."
+}

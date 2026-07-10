@@ -1,5 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
+from app.core.config import settings
+from app.core.auth import hash_api_key
+from app.models.api_key import ApiKey
 
 
 class TestAPIKeyAuthentication:
@@ -58,3 +61,55 @@ class TestMasterKeyAuthentication:
         )
         # 401 = unauthorized, 503 = service unavailable (sem BD configurado)
         assert response.status_code in [401, 503]
+
+    def test_rotate_api_key_creates_new_version(
+        self, client, db_session, test_api_key, monkeypatch
+    ):
+        """Rotação deve desativar a chave atual e criar uma nova versão."""
+        monkeypatch.setattr(settings, "MASTER_API_KEY", "test-master-key")
+
+        original = (
+            db_session.query(ApiKey)
+            .filter(ApiKey.key_hash == hash_api_key(test_api_key))
+            .first()
+        )
+
+        response = client.post(
+            f"/api/v1/api-keys/{original.id}/rotate",
+            headers={"X-Master-Key": "test-master-key"},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["version"] == 2
+        assert payload["rotated_from_id"] == str(original.id)
+        assert payload["rotated_at"] is None
+
+        db_session.refresh(original)
+        assert original.is_active is False
+        assert original.rotated_at is not None
+
+        rotated = (
+            db_session.query(ApiKey)
+            .filter(ApiKey.id == payload["id"])
+            .first()
+        )
+        assert rotated is not None
+        assert rotated.version == 2
+        assert rotated.rotated_from_id == original.id
+        assert rotated.is_active is True
+
+    def test_list_api_keys_exposes_version_metadata(
+        self, client, master_headers, test_api_key, monkeypatch
+    ):
+        """Listagem deve expor versão e origem da rotação."""
+        monkeypatch.setattr(settings, "MASTER_API_KEY", master_headers["X-Master-Key"])
+
+        response = client.get("/api/v1/api-keys", headers=master_headers)
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload) == 1
+        assert payload[0]["version"] == 1
+        assert payload[0]["rotated_from_id"] is None
+        assert payload[0]["rotated_at"] is None

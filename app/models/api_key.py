@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, Integer, DateTime
+from sqlalchemy import Column, String, Boolean, Integer, DateTime, ForeignKey
 from app.core.database import Base
 from app.core.sa_types import GUID
 
@@ -13,4 +13,7 @@ class ApiKey(Base):
     client_name = Column(String, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     rate_limit_per_minute = Column(Integer, default=60)
+    version = Column(Integer, default=1, nullable=False)
+    rotated_from_id = Column(GUID(), ForeignKey("api_keys.id"), nullable=True)
+    rotated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

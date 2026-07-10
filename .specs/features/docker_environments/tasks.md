@@ -51,10 +51,10 @@
 
 ## T7: Testar ambiente prod
 
-- [ ] Subir stack prod com env de exemplo local seguro.
+- [x] Subir stack prod com env de exemplo local seguro.
 - [x] Validar que DB/Redis nao expoem portas no host.
-- [ ] Validar `GET /health`.
-- [ ] Validar worker conectado ao broker.
+- [x] Validar `GET /health`.
+- [x] Validar worker conectado ao broker.
 - [x] Validar restart policy e logs.
 - **Done when:** prod roda com containers isolados, configuracao explicita e sem bind mount do codigo.
 

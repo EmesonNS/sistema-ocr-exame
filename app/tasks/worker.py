@@ -15,14 +15,28 @@ from app.services.ai_service import AIService
 from app.services.clinical_summary_service import ClinicalSummaryService
 from app.services.webhook_service import WebhookService
 from app.services.interoperability_service import InteroperabilityService
+from app.services.retention_service import cleanup_old_exams
 from app.services.biomarker_normalization import normalizar_resultado_biomarcador
 from app.repositories.exame_repo import ExameRepository
 from app.models.exame import ProcessingStage
+from app.core.config import settings
 from typing import Dict, Any
 import logging
 
 # Configure logger
 logger = logging.getLogger(__name__)
+
+
+def _coerce_confidence(value: Any) -> float:
+    """Converte confidence para float sem quebrar o fluxo do worker."""
+    try:
+        if value is None:
+            return 0.0
+        if hasattr(value, "__float__"):
+            return float(value)
+        return float(str(value))
+    except (TypeError, ValueError):
+        return 0.0
 
 
 class DatabaseTask(Task):
@@ -127,7 +141,8 @@ def processar_exame_task(self, exame_id: str, file_path: str):
             # Mapeamento LOINC (Fase 7)
             for res in resultados:
                 res["loinc_code"] = interoperability_service.map_to_loinc(
-                    res.get("nome_marcador_normalizado")
+                    res.get("nome_marcador_normalizado"),
+                    db=self.db,
                 )
                 exame_repo.add_resultado_normalizado(self.db, exame_id, res)
 
@@ -170,7 +185,11 @@ def processar_exame_task(self, exame_id: str, file_path: str):
                                 res["valor_numerico"] = normalizado_novo.get("valor_numerico")
                                 res["valor_extraido"] = normalizado_novo.get("valor_extraido")
                                 res["status_alerta"] = normalizado_novo.get("status_alerta")
-                                res["confianca"] = max(res.get("confianca", 0), re_inspecao.get("confianca_reinspecao", 0))
+                                confianca_atual = _coerce_confidence(res.get("confianca", 0))
+                                confianca_reinspecao = _coerce_confidence(
+                                    re_inspecao.get("confianca_reinspecao", 0)
+                                )
+                                res["confianca"] = max(confianca_atual, confianca_reinspecao)
                                 
                                 # Persistir atualização no banco
                                 exame_repo.update_resultado_reinspecionado(self.db, exame_id, res)
@@ -198,6 +217,15 @@ def processar_exame_task(self, exame_id: str, file_path: str):
             except Exception as e:
                 logger.exception(
                     f"Falha ao gerar resumo clínico para exame {exame_id}: {e}"
+                )
+
+            usage_summary = ai_service.consume_usage_summary()
+            if usage_summary["total_tokens"] or usage_summary["agentic_zoom_tokens"]:
+                exame_repo.update_usage_metrics(
+                    self.db,
+                    exame_id,
+                    total_tokens=usage_summary["total_tokens"],
+                    agentic_zoom_tokens=usage_summary["agentic_zoom_tokens"],
                 )
 
             exame_repo.update_processing_progress(
@@ -243,6 +271,14 @@ def processar_exame_task(self, exame_id: str, file_path: str):
             except Exception as e:
                 logger.error(f"Erro ao enviar webhook de sucesso ou atualizar lote: {e}")
         else:
+            usage_summary = ai_service.consume_usage_summary()
+            if usage_summary["total_tokens"] or usage_summary["agentic_zoom_tokens"]:
+                exame_repo.update_usage_metrics(
+                    self.db,
+                    exame_id,
+                    total_tokens=usage_summary["total_tokens"],
+                    agentic_zoom_tokens=usage_summary["agentic_zoom_tokens"],
+                )
             exame_repo.update_processing_progress(
                 self.db,
                 exame_id,
@@ -269,11 +305,23 @@ def processar_exame_task(self, exame_id: str, file_path: str):
                                 "patient_id": batch.patient_id,
                             }
                         )
-            except:
-                pass
+            except Exception as batch_error:  # noqa: BLE001
+                logger.warning(
+                    "Falha ao atualizar lote no fluxo de erro do exame %s: %s",
+                    exame_id,
+                    batch_error,
+                )
 
     except Exception as e:
         logger.exception(f"Erro ao processar exame {exame_id}: {e}")
+        usage_summary = ai_service.consume_usage_summary()
+        if usage_summary["total_tokens"] or usage_summary["agentic_zoom_tokens"]:
+            exame_repo.update_usage_metrics(
+                self.db,
+                exame_id,
+                total_tokens=usage_summary["total_tokens"],
+                agentic_zoom_tokens=usage_summary["agentic_zoom_tokens"],
+            )
         exame_repo.update_processing_progress(
             self.db,
             exame_id,
@@ -321,3 +369,15 @@ def processar_exame_task(self, exame_id: str, file_path: str):
         if file_path and os.path.exists(file_path):
             os.remove(file_path)
             logger.info(f"Arquivo temporário removido: {file_path}")
+
+
+@celery_app.task(
+    base=DatabaseTask,
+    name="cleanup_old_exams_task",
+    bind=True,
+)
+def cleanup_old_exams_task(self, older_than_days: int | None = None):
+    """Remove arquivos antigos de exames com base na política de retenção."""
+    effective_days = settings.OCR_RETENTION_DAYS if older_than_days is None else older_than_days
+    logger.info("Iniciando limpeza de exames antigos: older_than_days=%s", effective_days)
+    return cleanup_old_exams(self.db, older_than_days=effective_days)

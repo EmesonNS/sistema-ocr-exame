@@ -1,0 +1,2 @@
+document_id,corpus_class,result,upload_status,exam_id,final_status,processing_stage,processing_percent,processing_message,download_status,pdf_bytes,error
+ana_caroline,derived_output_do_not_use_as_source,blocked,201,ac6f742f-d3dc-4f2b-a7c9-a04ab4250c8e,erro,failed,0,Nenhum dado extraído do documento,,,terminal=erro: Nenhum dado extraído do documento

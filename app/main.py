@@ -1,3 +1,7 @@
+import logging
+import time
+import uuid
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -5,6 +9,9 @@ from app.core import database
 from app import models
 from app.api.endpoints import exames, api_keys
 from app.core.config import settings
+from app.core.runtime_readiness import build_runtime_readiness_report
+
+logger = logging.getLogger(__name__)
 
 DESCRIPTION = """
 ## API de OCR para Exames Médicos
@@ -106,6 +113,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def request_observability_middleware(request, call_next):
+    request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+    request.state.request_id = request_id
+    started_at = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        elapsed_ms = round((time.perf_counter() - started_at) * 1000, 2)
+        logger.exception(
+            "request_failed",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "duration_ms": elapsed_ms,
+            },
+        )
+        raise
+
+    elapsed_ms = round((time.perf_counter() - started_at) * 1000, 2)
+    response.headers["X-Request-ID"] = request_id
+    logger.info(
+        "request_completed",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": elapsed_ms,
+        },
+    )
+    return response
+
 app.include_router(exames.router, prefix="/api/v1", tags=["Exames"])
 app.include_router(api_keys.router, prefix="/api/v1", tags=["API Keys"])
 
@@ -114,3 +157,14 @@ app.include_router(api_keys.router, prefix="/api/v1", tags=["API Keys"])
 def health_check():
     """Verifica se a API está online. Não requer autenticação."""
     return {"status": "ok", "version": "1.0.0"}
+
+
+@app.get("/ready", tags=["Health"], summary="Readiness Check")
+def readiness_check():
+    """Verifica se API, banco, Redis, worker e segredos obrigatórios estão prontos."""
+    report = build_runtime_readiness_report()
+    if not report["ready"]:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=503, detail=report)
+    return report

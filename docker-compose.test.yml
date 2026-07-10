@@ -21,11 +21,14 @@ services:
       OPENROUTER_API_KEY: ""
       MASTER_API_KEY: test_master_key
       CORS_ORIGINS: '["http://localhost:5173"]'
+      OCR_RETENTION_DAYS: 30
       RUN_MIGRATIONS_ON_STARTUP: "false"
     volumes:
       - ./app:/code/app
       - ./alembic:/code/alembic
       - ./alembic.ini:/code/alembic.ini
+      - ./docker-compose.prod.yml:/code/docker-compose.prod.yml:ro
+      - ./amostras_exames:/code/amostras_exames:ro
       - test_uploads:/code/uploads
 
 volumes:

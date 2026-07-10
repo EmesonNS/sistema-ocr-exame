@@ -40,9 +40,32 @@
 - [x] Evidence Crop API (Visual Proof)
 - [x] Human verification workflow
 - [ ] Auditor Dashboard
+- [x] Static UI prototype documented in `docs/auditoria-dashboard-prototipo.html`
 
 ## Phase 9: Production Maturity & Clinical Standardization
-- [ ] FHIR DiagnosticReport Grouping
-- [ ] Dynamic LOINC Mapping Strategy
-- [ ] Agentic Token & Cost Tracking
-- [ ] Data Retention Policy & Compliance Worker
+- [x] FHIR DiagnosticReport Grouping
+- [x] Dynamic LOINC Mapping Strategy
+- [x] Agentic Token & Cost Tracking
+- [x] Data Retention Policy & Compliance Worker
+
+## OCR Quality Eval
+
+- [x] Materializar `evaluation/` com estrutura base, schemas placeholders e corpus manifest
+- [x] Classificar o corpus real atual em candidatos, derivados, negativos e shadow set
+- [x] Seed inicial da knowledge layer versionada
+- [x] Contratos de corpus/report validados por JSON Schema
+- [x] Runner API-mode com evidência bloqueada real para um derivado
+- [x] Cobertura automatizada mínima do benchmark (manifest + report helper)
+- [x] Export consolidado de report e CSVs de release
+- [x] Scorer mínimo com findings tipados e gate `unsafe_normal_rate` quando houver golden
+- [x] Anotar manualmente o primeiro `golden_exams`
+- [x] Implementar runner, scorer e reports de release
+- [x] Validar o negative set com run rastreavel e report verificavel
+- [x] Cobrir o runner em `in-process` e o scorer com testes unitarios
+
+## Production Readiness Gaps
+
+- [ ] Integrar o OCR ao produto com proxy autenticado no backend e contrato estável de upload/status/evidence
+- [ ] Implementar o frontend real do dashboard de auditoria no repo do produto
+- [ ] Validar o stack de produção com segredos reais, deploy controlado e smoke pós-deploy
+- [ ] Adicionar monitoramento contínuo de qualidade, custo e segurança em ambiente real

@@ -17,6 +17,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.services.exame_service import ExameService
+from app.services.storage_service import ExamStorageService
 from app.services.clinical_summary_service import ClinicalSummaryService
 from app.services.interoperability_service import InteroperabilityService
 from app.services.evidence_service import EvidenceService
@@ -33,6 +34,7 @@ from app.core.auth import verify_api_key
 
 router = APIRouter()
 exame_service = ExameService()
+storage_service = ExamStorageService()
 interoperability_service = InteroperabilityService()
 evidence_service = EvidenceService()
 
@@ -157,6 +159,34 @@ def get_exame_details(
     if not exame:
         raise HTTPException(status_code=404, detail="Exame não encontrado")
     return exame
+
+
+@router.get(
+    "/exames/{exame_id}/arquivo",
+    summary="Arquivo original do exame",
+    description="Retorna o PDF original persistido do exame para consumo interno autenticado.",
+)
+def get_exame_file(
+    exame_id: UUID = Path(..., description="UUID do exame"),
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(verify_api_key),
+):
+    exame = exame_service.get_exame(db, exame_id)
+    if not exame:
+        raise HTTPException(status_code=404, detail="Exame não encontrado")
+
+    try:
+        file_download = storage_service.stream_file(exame)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Arquivo do exame não encontrado")
+
+    safe_filename = exame.original_filename or f"exame-{exame_id}.pdf"
+    headers = {"Content-Disposition": f'inline; filename="{safe_filename}"'}
+    return StreamingResponse(
+        file_download.chunks,
+        media_type=file_download.content_type,
+        headers=headers,
+    )
 
 
 @router.get(
@@ -393,22 +423,7 @@ def get_exame_fhir(
     if not exame.resultados:
         raise HTTPException(status_code=404, detail="Exame não possui resultados para exportar")
 
-    observations = []
-    for res in exame.resultados:
-        obs = interoperability_service.convert_to_fhir_observation(res, exame.patient_id)
-        observations.append({
-            "fullUrl": f"http://hl7.org/fhir/Observation/{res.id}",
-            "resource": obs
-        })
-
-    bundle = {
-        "resourceType": "Bundle",
-        "type": "collection",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "entry": observations
-    }
-
-    return bundle
+    return interoperability_service.build_fhir_bundle(exame)
 
 # ========================================
 # Audit & Evidence Endpoints (Fase 8)

@@ -1,4 +1,20 @@
 services:
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    networks:
+      - ocr_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   db:
     image: postgres:15-alpine
     environment:
@@ -79,10 +95,21 @@ services:
       MASTER_API_KEY: ${MASTER_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173"]}
       RUN_MIGRATIONS_ON_STARTUP: "false"
+      OCR_STORAGE_BACKEND: ${OCR_STORAGE_BACKEND:-s3}
+      OCR_STORAGE_BUCKET: ${OCR_STORAGE_BUCKET:-ocr-exams}
+      OCR_STORAGE_REGION: ${OCR_STORAGE_REGION:-us-east-1}
+      OCR_STORAGE_ENDPOINT: ${OCR_STORAGE_ENDPOINT:-http://minio:9000}
+      OCR_STORAGE_ACCESS_KEY: ${OCR_STORAGE_ACCESS_KEY:-${MINIO_ROOT_USER:-minioadmin}}
+      OCR_STORAGE_SECRET_KEY: ${OCR_STORAGE_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-minioadmin}}
+      OCR_STORAGE_FORCE_PATH_STYLE: ${OCR_STORAGE_FORCE_PATH_STYLE:-true}
+      OCR_LOCAL_STORAGE_DIR: ${OCR_LOCAL_STORAGE_DIR:-storage}
+      OCR_RETENTION_DAYS: ${OCR_RETENTION_DAYS:-30}
     volumes:
       - app_uploads:/code/uploads
     depends_on:
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -92,7 +119,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()\"",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2).read()\"",
         ]
       interval: 10s
       timeout: 5s
@@ -119,10 +146,21 @@ services:
       MASTER_API_KEY: ${MASTER_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173"]}
       RUN_MIGRATIONS_ON_STARTUP: "false"
+      OCR_STORAGE_BACKEND: ${OCR_STORAGE_BACKEND:-s3}
+      OCR_STORAGE_BUCKET: ${OCR_STORAGE_BUCKET:-ocr-exams}
+      OCR_STORAGE_REGION: ${OCR_STORAGE_REGION:-us-east-1}
+      OCR_STORAGE_ENDPOINT: ${OCR_STORAGE_ENDPOINT:-http://minio:9000}
+      OCR_STORAGE_ACCESS_KEY: ${OCR_STORAGE_ACCESS_KEY:-${MINIO_ROOT_USER:-minioadmin}}
+      OCR_STORAGE_SECRET_KEY: ${OCR_STORAGE_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-minioadmin}}
+      OCR_STORAGE_FORCE_PATH_STYLE: ${OCR_STORAGE_FORCE_PATH_STYLE:-true}
+      OCR_LOCAL_STORAGE_DIR: ${OCR_LOCAL_STORAGE_DIR:-storage}
+      OCR_RETENTION_DAYS: ${OCR_RETENTION_DAYS:-30}
     volumes:
       - app_uploads:/code/uploads
     depends_on:
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -133,6 +171,7 @@ volumes:
   postgres_data:
   redis_data:
   app_uploads:
+  minio_data:
 
 networks:
   ocr_network:

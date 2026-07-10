@@ -1,0 +1,21 @@
+{
+  "version": "0.1.0",
+  "unit_aliases": [
+    {
+      "canonical": "%",
+      "aliases": ["%", "percentual", "por cento"]
+    },
+    {
+      "canonical": "/mm³",
+      "aliases": ["/mm3", "/mm³", "mm3", "mm³", "/uL", "/ul", "/μL"]
+    },
+    {
+      "canonical": "g/dL",
+      "aliases": ["g/dl", "G/DL", "g/dL"]
+    },
+    {
+      "canonical": "mg/dL",
+      "aliases": ["mg/dl", "MG/DL", "mg/dL"]
+    }
+  ]
+}

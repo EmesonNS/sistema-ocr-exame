@@ -1,0 +1,5 @@
+corpus_class,document_id,exam_id,jwt_role,message,name,patient_id,role,stage,status
+,,,CLINIC,,auth,,CLINIC,,
+,,,,,patient,9,,,
+derived_output_do_not_use_as_source,ana_caroline,ac6f742f-d3dc-4f2b-a7c9-a04ab4250c8e,,,upload,,,,
+,ana_caroline,,,Nenhum dado extraído do documento,terminal,,,failed,erro

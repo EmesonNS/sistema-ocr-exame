@@ -40,8 +40,9 @@ class FonteValor(str, Enum):
 _PATTERN_PERCENTUAL = re.compile(r"%|percentual|por cento", re.IGNORECASE)
 _PATTERN_ABSOLUTO = re.compile(r"/mm[³3]|/ml|/l\b|mm[³3]\b|celulas", re.IGNORECASE)
 _PATTERN_NUMERO = re.compile(r"[-+]?\d(?:[\d.,\s]*\d)?")
+_PATTERN_NUMERO_REFERENCIA = r"[-+]?(?:\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d+)?"
 _PATTERN_REFERENCIA = re.compile(
-    r"(?P<min>[-+]?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:a|até|-|–|—)\s*(?P<max>[-+]?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?)",
+    rf"(?P<min>{_PATTERN_NUMERO_REFERENCIA})\s*(?:a|até|-|–|—)\s*(?P<max>{_PATTERN_NUMERO_REFERENCIA})",
     re.IGNORECASE,
 )
 _PATTERN_TEXTO_POSITIVO = re.compile(
@@ -105,6 +106,18 @@ def _detectar_locale_por_separador(valor: Optional[str]) -> str:
     # Padrão en_US: vírgula como milhar, ponto como decimal
     if re.match(r"^\d{1,3}(,\d{3})+\.\d+$", valor):
         return "en_US"
+
+    # Ponto simples com casas decimais é comum em laudos e respostas de IA.
+    # Ex.: "13.8" e "0.86" devem preservar o ponto decimal, não removê-lo
+    # como separador de milhar pt_BR.
+    if "." in valor and "," not in valor:
+        if re.match(r"^\d{1,3}(\.\d{3})+$", valor):
+            return "pt_BR"
+        return "en_US"
+
+    # Vírgula simples sem ponto é decimal no padrão pt_BR.
+    if "," in valor and "." not in valor:
+        return "pt_BR"
 
     # Padrão com espaço como milhar (comum em alguns labs)
     if re.match(r"^\d{1,3}(\s\d{3})+[,.]\d+$", valor):
@@ -251,12 +264,12 @@ def parse_referencia(
         return parse_valor_numerico(min_str), parse_valor_numerico(max_str)
 
     # Padrão "< valor" (apenas máximo)
-    match_menor = re.search(r"[<≤]\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?)", referencia)
+    match_menor = re.search(rf"[<≤]\s*({_PATTERN_NUMERO_REFERENCIA})", referencia)
     if match_menor:
         return None, parse_valor_numerico(match_menor.group(1))
 
     # Padrão "> valor" (apenas mínimo)
-    match_maior = re.search(r"[>≥]\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?)", referencia)
+    match_maior = re.search(rf"[>≥]\s*({_PATTERN_NUMERO_REFERENCIA})", referencia)
     if match_maior:
         return parse_valor_numerico(match_maior.group(1)), None
 

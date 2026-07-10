@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-07-08T00:00:00Z",
+  "source": "amostras_exames",
+  "documents": [
+    {
+      "document_id": "laudo_completo_2026_02_04",
+      "file_path": "amostras_exames/Laudo Completo 04_02_2026 (1).pdf",
+      "corpus_class": "golden_candidate_raw_lab",
+      "document_type_expected": "lab_report",
+      "source_status": "real",
+      "curation_status": "annotated_golden_initial",
+      "notes": "Candidato bruto anotado manualmente no baseline inicial do golden."
+    },
+    {
+      "document_id": "laudosabin_ana_rodrigues_2025_05_13",
+      "file_path": "amostras_exames/LaudoSabin-AnaRodrigues-13-05-25.pdf",
+      "corpus_class": "golden_candidate_raw_lab",
+      "document_type_expected": "lab_report",
+      "source_status": "real",
+      "curation_status": "annotated_golden_initial",
+      "notes": "Candidato bruto anotado manualmente no baseline inicial do golden."
+    },
+    {
+      "document_id": "emissao_de_laudo",
+      "file_path": "amostras_exames/EmissaoDeLaudo.pdf",
+      "corpus_class": "shadow_document",
+      "document_type_expected": "lab_report",
+      "source_status": "real",
+      "curation_status": "shadow_document_confirmed",
+      "notes": "Documento real mantido em shadow set; integridade textual nao foi usada para promover ao golden."
+    },
+    {
+      "document_id": "ana_caroline",
+      "file_path": "amostras_exames/Ana Caroline.pdf",
+      "corpus_class": "derived_output_do_not_use_as_source",
+      "document_type_expected": "derived_summary",
+      "source_status": "real",
+      "curation_status": "classified",
+      "notes": "Resumo/parecer derivado; nao usar como truth de extracao laboratorial."
+    },
+    {
+      "document_id": "ana_perla",
+      "file_path": "amostras_exames/Ana Perla.pdf",
+      "corpus_class": "derived_output_do_not_use_as_source",
+      "document_type_expected": "derived_summary",
+      "source_status": "real",
+      "curation_status": "classified",
+      "notes": "Resumo/parecer derivado; nao usar como truth de extracao laboratorial."
+    },
+    {
+      "document_id": "alexsandra",
+      "file_path": "amostras_exames/Alexsandra.pdf",
+      "corpus_class": "derived_output_do_not_use_as_source",
+      "document_type_expected": "derived_summary",
+      "source_status": "real",
+      "curation_status": "classified",
+      "notes": "Resumo/parecer derivado; nao usar como truth de extracao laboratorial."
+    },
+    {
+      "document_id": "receita_alexsandra_ribeiro",
+      "file_path": "amostras_exames/Receita Alexsandra Ribeiro.pdf",
+      "corpus_class": "negative_document",
+      "document_type_expected": "non_lab_document",
+      "source_status": "real",
+      "curation_status": "classified",
+      "notes": "Receita; deve ficar no negative set."
+    },
+    {
+      "document_id": "adicionar_plano_support_clinic",
+      "file_path": "amostras_exames/Adicionar plano - Support Clinic.pdf",
+      "corpus_class": "negative_document",
+      "document_type_expected": "non_lab_document",
+      "source_status": "real",
+      "curation_status": "classified",
+      "notes": "Documento administrativo; deve ficar no negative set."
+    },
+    {
+      "document_id": "protocolo_ana_perlla",
+      "file_path": "amostras_exames/Protocolo - Ana Perlla.pdf",
+      "corpus_class": "negative_document",
+      "document_type_expected": "non_lab_document",
+      "source_status": "real",
+      "curation_status": "classified",
+      "notes": "Protocolo administrativo; deve ficar no negative set."
+    }
+  ]
+}

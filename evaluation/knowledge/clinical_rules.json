@@ -1,0 +1,22 @@
+{
+  "version": "0.1.0",
+  "status_order": ["normal", "alto", "baixo", "indefinido", "incoerente"],
+  "critical_metrics": ["unsafe_normal_rate"],
+  "rules": [
+    {
+      "name": "missing_reference_means_indefinido",
+      "when": "reference_missing",
+      "status": "indefinido"
+    },
+    {
+      "name": "textual_values_are_indefinido",
+      "when": "value_type_textual",
+      "status": "indefinido"
+    },
+    {
+      "name": "reference_conflict_requires_review",
+      "when": "numeric_conflict_or_outlier",
+      "status": "incoerente"
+    }
+  ]
+}
